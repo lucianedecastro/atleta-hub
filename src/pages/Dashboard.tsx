@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, MessageCircle, User, Building, TrendingUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import Footer from "@/components/footer"; // ✅ Importação do rodapé
+import Footer from "@/components/Footer"; // ✅ Importação do rodapé
 
 interface User {
   email: string;
