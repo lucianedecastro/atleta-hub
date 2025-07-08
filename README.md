@@ -1,53 +1,63 @@
-Bem-vindo ao Projeto AtletaHub
-Informações do Projeto
-AtletaHub é uma plataforma digital projetada para conectar atletas de diversas modalidades, incluindo jiu-jitsu, surf, futebol, vôlei, basquete, natação e tênis, com marcas patrocinadoras. O projeto aborda as dificuldades que atletas amadores enfrentam para conseguir patrocínio.
+# 🏅 AtletaHub
 
-A plataforma visa democratizar o acesso ao patrocínio, impulsionar o desenvolvimento de atletas e promover maior transparência e eficiência no processo de conexão entre atletas e marcas.
+Bem-vindo ao repositório oficial do **AtletaHub**, uma plataforma digital criada para transformar a realidade do patrocínio esportivo no Brasil!
 
-Como posso editar este código?
-O desenvolvimento do AtletaHub está em andamento, com foco na entrega de um protótipo funcional.
+---
 
-Quais tecnologias são usadas para este projeto?
-Com base na estrutura de arquivos e no conteúdo do projeto, este projeto está sendo construído com as seguintes tecnologias:
+## 💡 Sobre o Projeto
 
-Desenvolvimento Frontend:
+**AtletaHub** é uma plataforma desenvolvida para **conectar atletas** de diversas modalidades (como jiu-jitsu, surf, futebol, vôlei, basquete, natação e tênis) com **marcas patrocinadoras**.
 
-React: Utilizado para a criação das interfaces de usuário.
+🎯 **Objetivos da plataforma:**
 
-TypeScript: Indicado pelos arquivos .ts como tailwind.config.ts, tsconfig.app.json, tsconfig.json, vite.config.ts, e também mencionado no documento do projeto.
+- Democratizar o acesso ao patrocínio esportivo.  
+- Impulsionar o desenvolvimento de atletas.  
+- Promover maior **transparência** e **eficiência** na relação entre atletas e marcas.  
+- Dar visibilidade a talentos que historicamente têm dificuldade de acesso a marcas.
 
-Vite: Presente no vite.config.ts.
+---
 
-Tailwind CSS: Confirmado pelo tailwind.config.ts e postcss.config.js.
+## 🚧 Status do Projeto
 
-HTML: Representado pelo index.html.
+O desenvolvimento do AtletaHub está em andamento com foco na entrega de um **protótipo funcional**.  
+Contribuições são bem-vindas!
 
-CSS e JavaScript: Utilizados na criação das interfaces de usuário.
+---
 
-shadcn-ui.
+## 🧩 Tecnologias Utilizadas
 
-Desenvolvimento Backend:
+### 🔷 **Frontend**
 
-Java com Spring Framework: Utilizado para a implementação da lógica de negócios e criação de APIs.
+- **React** – Interface moderna e reativa.
+- **TypeScript** – Tipagem estática para maior segurança.
+- **Vite** – Ferramenta de build rápida e eficiente.
+- **Tailwind CSS** – Utilitário CSS para estilização.
+- **HTML / CSS / JavaScript** – Estrutura da interface.
+- **ShadCN UI** – Componentes elegantes com acessibilidade garantida.
 
-MySQL: Utilizado como banco de dados.
+### 🔶 **Backend**
 
-Controle de Versão:
+- **Java com Spring Framework** – APIs robustas e escaláveis.
+- **MySQL** – Banco de dados relacional para persistência de dados.
 
-Git e GitHub: Utilizados para versionamento do código-fonte, facilitando a colaboração e o controle de versão.
+### 🗂️ **Controle de Versão**
 
-Gerenciamento de Pacotes/Build:
+- **Git + GitHub** – Versionamento e colaboração no código.
 
-package.json, package-lock.json, bun.lockb: Indicam o uso de gerenciadores de pacotes como npm ou Yarn (através dos arquivos package.json e package-lock.json) e Bun (através do bun.lockb).
+### 🧰 **Gerenciamento e Configuração**
 
-Ferramentas de Configuração e Linting:
+- **npm / Yarn / Bun** – Gerenciamento de pacotes (detalhado nos arquivos `package.json`, `package-lock.json`, `bun.lockb`).
+- **ESLint** – Linting para manter o código limpo e padronizado.
+- **PostCSS** – Processamento avançado de CSS.
+- **.gitignore** – Controle de arquivos que não devem ser versionados.
 
-.gitignore: Para controle de arquivos ignorados pelo Git.
+---
 
-eslint.config.js: Ferramenta para linting de código JavaScript/TypeScript.
+👩‍💻 Desenvolvido por
+Luciane de Castro
+📧 luciane.castro@gmail.com
 
-postcss.config.js: Para processamento CSS.
+---
 
-Informações de Contato
-Desenvolvido por Luciane de Castro
-E-mail: ✉️ luciane.castro@gmail.com
+📄 Licença
+Este projeto está sob licença MIT.
