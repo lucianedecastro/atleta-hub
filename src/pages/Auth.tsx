@@ -17,14 +17,13 @@ const Auth = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isLogin) {
-      // Simulate login
       if (email && password) {
-        localStorage.setItem("user", JSON.stringify({ 
-          email, 
-          userType: userType || "athlete", 
-          name: name || "Usuário" 
+        localStorage.setItem("user", JSON.stringify({
+          email,
+          userType: userType || "athlete",
+          name: name || "Usuário"
         }));
         toast({
           title: "Login realizado com sucesso!",
@@ -33,12 +32,11 @@ const Auth = () => {
         navigate("/dashboard");
       }
     } else {
-      // Simulate registration
       if (name && email && password && userType) {
-        localStorage.setItem("user", JSON.stringify({ 
-          email, 
-          userType, 
-          name 
+        localStorage.setItem("user", JSON.stringify({
+          email,
+          userType,
+          name
         }));
         toast({
           title: "Cadastro realizado com sucesso!",
@@ -56,11 +54,13 @@ const Auth = () => {
           <h1 className="text-4xl font-bold text-white mb-2">AtletaHub</h1>
           <p className="text-white/80">Conectando atletas e marcas</p>
         </div>
-        
+
         <Card className="shadow-elegant">
           <CardHeader>
-            <CardTitle>{isLogin ? "Login" : "Cadastro"}</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-brand-primary">
+              {isLogin ? "Login" : "Cadastro"}
+            </CardTitle>
+            <CardDescription className="text-brand-secondary/80">
               {isLogin ? "Faça login em sua conta" : "Crie sua conta no AtletaHub"}
             </CardDescription>
           </CardHeader>
@@ -78,7 +78,7 @@ const Auth = () => {
                   />
                 </div>
               )}
-              
+
               <div>
                 <Label htmlFor="email">E-mail</Label>
                 <Input
@@ -89,7 +89,7 @@ const Auth = () => {
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="password">Senha</Label>
                 <Input
@@ -100,7 +100,7 @@ const Auth = () => {
                   required
                 />
               </div>
-              
+
               {!isLogin && (
                 <div>
                   <Label htmlFor="userType">Tipo de usuário</Label>
@@ -116,19 +116,21 @@ const Auth = () => {
                   </Select>
                 </div>
               )}
-              
+
               <Button type="submit" className="w-full" variant="hero">
                 {isLogin ? "Entrar" : "Cadastrar"}
               </Button>
             </form>
-            
+
             <div className="mt-4 text-center">
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-primary hover:underline"
+                className="text-brand-accent hover:underline"
               >
-                {isLogin ? "Não tem conta? Cadastre-se" : "Já tem conta? Faça login"}
+                {isLogin
+                  ? "Não tem conta? Cadastre-se"
+                  : "Já tem conta? Faça login"}
               </button>
             </div>
           </CardContent>

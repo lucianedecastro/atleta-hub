@@ -1,7 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Users, MessageCircle, TrendingUp, Star, Shield } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
+import {
+  Heart,
+  Users,
+  MessageCircle,
+  TrendingUp,
+  Star,
+  Shield
+} from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 
 const Index = () => {
@@ -47,13 +60,13 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative bg-gradient-hero text-white py-20 overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <img 
-            src={heroImage} 
-            alt="Athletes and brands connecting" 
-            className="w-full h-full object-cover"
+        <div className="absolute inset-0">
+          <img
+            src={heroImage}
+            alt="Athletes and brands connecting"
+            className="w-full h-full object-cover opacity-30"
           />
-          <div className="absolute inset-0 bg-gradient-hero/80"></div>
+          <div className="absolute inset-0 bg-gradient-hero/80" />
         </div>
         <div className="container mx-auto text-center px-4 relative z-10">
           <h1 className="text-6xl font-bold mb-6">AtletaHub</h1>
@@ -80,10 +93,13 @@ const Index = () => {
               Nossa plataforma conecta atletas e marcas de forma inteligente e segura
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+              <Card
+                key={index}
+                className="text-center hover:shadow-elegant transition-shadow"
+              >
                 <CardHeader>
                   <div className="flex justify-center mb-4">
                     {feature.icon}
@@ -108,7 +124,7 @@ const Index = () => {
               Em 3 passos você pode começar a fazer connections
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="bg-primary text-primary-foreground w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
@@ -119,7 +135,7 @@ const Index = () => {
                 Crie seu perfil como atleta ou marca
               </p>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-accent text-accent-foreground w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 2
@@ -129,7 +145,7 @@ const Index = () => {
                 Veja perfis e demonstre interesse
               </p>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-match text-match-foreground w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 3
@@ -149,17 +165,18 @@ const Index = () => {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">O que dizem nossos usuários</h2>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
+              <Card
+                key={index}
+                className="hover:shadow-elegant transition-shadow"
+              >
                 <CardHeader>
                   <div className="flex items-center space-x-2">
-                    <Star className="w-5 h-5 text-primary fill-current" />
-                    <Star className="w-5 h-5 text-primary fill-current" />
-                    <Star className="w-5 h-5 text-primary fill-current" />
-                    <Star className="w-5 h-5 text-primary fill-current" />
-                    <Star className="w-5 h-5 text-primary fill-current" />
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 text-primary fill-current" />
+                    ))}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -198,7 +215,7 @@ const Index = () => {
             </div>
             <div className="flex items-center space-x-4">
               <Shield className="w-5 h-5" />
-              <span className="text-sm">Plataforma segura e confiável</span>
+              <span className="text-sm">Todos os direitos reservados &copy; 2025 AtletaHub</span>
             </div>
           </div>
         </div>

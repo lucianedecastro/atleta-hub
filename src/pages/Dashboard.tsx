@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, MessageCircle, User, Building, TrendingUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import Footer from "@/components/footer"; // ✅ Importação do rodapé
 
 interface User {
   email: string;
@@ -38,77 +39,23 @@ const Dashboard = () => {
       navigate("/auth");
       return;
     }
-    
+
     const parsedUser = JSON.parse(userData);
     setUser(parsedUser);
-    
-    // Mock profiles data
+
     const mockProfiles: Profile[] = [
-      {
-        id: "1",
-        name: "João Silva",
-        type: "athlete",
-        sport: "Futebol",
-        height: "1.80m",
-        weight: "75kg",
-        interested: false,
-        matched: false
-      },
-      {
-        id: "2",
-        name: "Maria Santos",
-        type: "athlete",
-        sport: "Vôlei",
-        height: "1.70m",
-        weight: "65kg",
-        interested: false,
-        matched: false
-      },
-      {
-        id: "3",
-        name: "Nike Brasil",
-        type: "brand",
-        marketTime: "25 anos",
-        sponsoredAthletes: 150,
-        interested: false,
-        matched: false
-      },
-      {
-        id: "4",
-        name: "Adidas",
-        type: "brand",
-        marketTime: "30 anos",
-        sponsoredAthletes: 200,
-        interested: false,
-        matched: false
-      },
-      {
-        id: "5",
-        name: "Carlos Mendes",
-        type: "athlete",
-        sport: "Jiu-Jitsu",
-        height: "1.75m",
-        weight: "80kg",
-        interested: false,
-        matched: false
-      },
-      {
-        id: "6",
-        name: "Ana Costa",
-        type: "athlete",
-        sport: "Surf",
-        height: "1.65m",
-        weight: "58kg",
-        interested: false,
-        matched: false
-      }
+      { id: "1", name: "João Silva", type: "athlete", sport: "Futebol", height: "1.80m", weight: "75kg", interested: false, matched: false },
+      { id: "2", name: "Maria Santos", type: "athlete", sport: "Vôlei", height: "1.70m", weight: "65kg", interested: false, matched: false },
+      { id: "3", name: "Nike Brasil", type: "brand", marketTime: "25 anos", sponsoredAthletes: 150, interested: false, matched: false },
+      { id: "4", name: "Adidas", type: "brand", marketTime: "30 anos", sponsoredAthletes: 200, interested: false, matched: false },
+      { id: "5", name: "Carlos Mendes", type: "athlete", sport: "Jiu-Jitsu", height: "1.75m", weight: "80kg", interested: false, matched: false },
+      { id: "6", name: "Ana Costa", type: "athlete", sport: "Surf", height: "1.65m", weight: "58kg", interested: false, matched: false }
     ];
-    
-    // Filter profiles based on user type
-    const filteredProfiles = parsedUser.userType === "admin" 
-      ? mockProfiles 
+
+    const filteredProfiles = parsedUser.userType === "admin"
+      ? mockProfiles
       : mockProfiles.filter(profile => profile.type !== parsedUser.userType);
-    
+
     setProfiles(filteredProfiles);
   }, [navigate]);
 
@@ -116,17 +63,13 @@ const Dashboard = () => {
     setProfiles(prev => prev.map(profile => {
       if (profile.id === profileId) {
         const newInterested = !profile.interested;
-        
-        // Simulate match (30% chance)
         const matched = newInterested && Math.random() > 0.7;
-        
+
         if (matched) {
           toast({
             title: "🎉 Match!",
             description: `Você fez match com ${profile.name}! Agora podem conversar.`,
           });
-          
-          // Add to matches
           setMatches(prev => [...prev, { ...profile, matched: true }]);
         } else if (newInterested) {
           toast({
@@ -134,7 +77,7 @@ const Dashboard = () => {
             description: `${profile.name} foi notificado do seu interesse.`,
           });
         }
-        
+
         return { ...profile, interested: newInterested, matched };
       }
       return profile;
@@ -149,7 +92,7 @@ const Dashboard = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <header className="bg-gradient-primary text-white p-4">
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -170,13 +113,12 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto p-4">
+      <main className="container mx-auto p-4 flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profiles Section */}
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold mb-4">
-              {user.userType === "admin" ? "Todos os Perfis" : 
-               user.userType === "athlete" ? "Marcas Disponíveis" : "Atletas Disponíveis"}
+              {user.userType === "admin" ? "Todos os Perfis" :
+                user.userType === "athlete" ? "Marcas Disponíveis" : "Atletas Disponíveis"}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {profiles.map((profile) => (
@@ -211,7 +153,7 @@ const Dashboard = () => {
                         <p><strong>Atletas patrocinados:</strong> {profile.sponsoredAthletes}</p>
                       </div>
                     )}
-                    
+
                     {user.userType !== "admin" && (
                       <div className="mt-4 flex items-center justify-between">
                         <Button
@@ -225,7 +167,7 @@ const Dashboard = () => {
                             {profile.interested ? "Interessado" : "Interessado(a)"}
                           </span>
                         </Button>
-                        
+
                         {profile.matched && (
                           <Badge variant="destructive">Match!</Badge>
                         )}
@@ -237,7 +179,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Matches & Messages Section / Admin Stats */}
           <div>
             {user.userType === "admin" ? (
               <>
@@ -332,9 +273,9 @@ const Dashboard = () => {
                                 </p>
                               </div>
                             </div>
-                            <Button 
-                              variant="match" 
-                              size="sm" 
+                            <Button
+                              variant="match"
+                              size="sm"
                               onClick={() => navigate(`/chat/${match.id}`)}
                             >
                               <MessageCircle className="w-4 h-4 mr-2" />
@@ -350,7 +291,9 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-      </div>
+      </main>
+
+      <Footer /> {/* ✅ Rodapé adicionado */}
     </div>
   );
 };

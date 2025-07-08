@@ -31,6 +31,7 @@ interface BrandProfile {
   budget: string;
 }
 
+
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
   const [athleteProfile, setAthleteProfile] = useState<AthleteProfile>({
@@ -54,11 +55,10 @@ const Profile = () => {
       navigate("/auth");
       return;
     }
-    
+
     const parsedUser = JSON.parse(userData);
     setUser(parsedUser);
-    
-    // Load existing profile data
+
     const profileData = localStorage.getItem(`profile_${parsedUser.email}`);
     if (profileData) {
       const parsed = JSON.parse(profileData);
@@ -72,10 +72,10 @@ const Profile = () => {
 
   const handleSave = () => {
     if (!user) return;
-    
+
     const profileData = user.userType === "athlete" ? athleteProfile : brandProfile;
     localStorage.setItem(`profile_${user.email}`, JSON.stringify(profileData));
-    
+
     toast({
       title: "Perfil atualizado!",
       description: "Suas informações foram salvas com sucesso.",
@@ -109,15 +109,15 @@ const Profile = () => {
         </div>
       </header>
 
-      <div className="container mx-auto p-4 max-w-2xl">
+      <main className="container mx-auto p-4 max-w-2xl">
         <Card className="shadow-elegant">
           <CardHeader>
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
                 {user.userType === "athlete" ? (
-                  <User className="w-8 h-8" />
+                  <User className="w-8 h-8 text-primary" />
                 ) : (
-                  <Building className="w-8 h-8" />
+                  <Building className="w-8 h-8 text-primary" />
                 )}
               </div>
               <div>
@@ -126,6 +126,7 @@ const Profile = () => {
               </div>
             </div>
           </CardHeader>
+
           <CardContent className="space-y-6">
             {user.userType === "athlete" ? (
               <>
@@ -149,10 +150,13 @@ const Profile = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="sport">Modalidade</Label>
-                  <Select value={athleteProfile.sport} onValueChange={(value) => handleAthleteChange("sport", value)}>
+                  <Select
+                    value={athleteProfile.sport}
+                    onValueChange={(value) => handleAthleteChange("sport", value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione sua modalidade" />
                     </SelectTrigger>
@@ -169,7 +173,7 @@ const Profile = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="achievements">Conquistas e Rankings</Label>
                   <Textarea
@@ -180,7 +184,7 @@ const Profile = () => {
                     rows={3}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="history">Histórico</Label>
                   <Textarea
@@ -191,7 +195,7 @@ const Profile = () => {
                     rows={3}
                   />
                 </div>
-                
+
                 <Button onClick={handleSave} className="w-full" variant="hero">
                   Salvar Perfil
                 </Button>
@@ -218,7 +222,7 @@ const Profile = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="description">Descrição da marca</Label>
                   <Textarea
@@ -229,10 +233,13 @@ const Profile = () => {
                     rows={4}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="budget">Orçamento para patrocínios</Label>
-                  <Select value={brandProfile.budget} onValueChange={(value) => handleBrandChange("budget", value)}>
+                  <Select
+                    value={brandProfile.budget}
+                    onValueChange={(value) => handleBrandChange("budget", value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a faixa de orçamento" />
                     </SelectTrigger>
@@ -245,28 +252,26 @@ const Profile = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <Button onClick={handleSave} className="w-full" variant="hero">
                   Salvar Perfil
                 </Button>
               </>
             ) : (
-              <>
-                <div className="text-center py-8">
-                  <div className="mb-4">
-                    <Building className="w-16 h-16 mx-auto text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Perfil Administrativo</h3>
-                  <p className="text-muted-foreground">
-                    Você possui acesso administrativo completo à plataforma AtletaHub. 
-                    Através do dashboard você pode visualizar todos os perfis e estatísticas do sistema.
-                  </p>
+              <div className="text-center py-8">
+                <div className="mb-4">
+                  <Building className="w-16 h-16 mx-auto text-muted-foreground" />
                 </div>
-              </>
+                <h3 className="text-lg font-semibold mb-2">Perfil Administrativo</h3>
+                <p className="text-muted-foreground max-w-xl mx-auto">
+                  Você possui acesso administrativo completo à plataforma AtletaHub. 
+                  Através do dashboard você pode visualizar todos os perfis e estatísticas do sistema.
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 };

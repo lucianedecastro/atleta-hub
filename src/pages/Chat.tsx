@@ -42,22 +42,20 @@ const Chat = () => {
       navigate("/auth");
       return;
     }
-    
+
     const parsedUser = JSON.parse(userData);
     setUser(parsedUser);
-    
-    // Mock partner data based on matchId
+
     const mockPartners: Record<string, ChatPartner> = {
       "1": { id: "1", name: "João Silva", type: "athlete" },
       "2": { id: "2", name: "Maria Santos", type: "athlete" },
       "3": { id: "3", name: "Nike Brasil", type: "brand" },
       "4": { id: "4", name: "Adidas", type: "brand" }
     };
-    
+
     if (matchId && mockPartners[matchId]) {
       setPartner(mockPartners[matchId]);
-      
-      // Mock messages
+
       const mockMessages: Message[] = [
         {
           id: "1",
@@ -81,7 +79,7 @@ const Chat = () => {
           isOwn: false
         }
       ];
-      
+
       setMessages(mockMessages);
     }
   }, [matchId, navigate]);
@@ -92,9 +90,9 @@ const Chat = () => {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newMessage.trim() || !user || !partner) return;
-    
+
     const message: Message = {
       id: Date.now().toString(),
       sender: user.name,
@@ -102,11 +100,10 @@ const Chat = () => {
       timestamp: new Date(),
       isOwn: true
     };
-    
+
     setMessages(prev => [...prev, message]);
     setNewMessage("");
-    
-    // Simulate response after 2 seconds
+
     setTimeout(() => {
       const response: Message = {
         id: (Date.now() + 1).toString(),
@@ -120,9 +117,9 @@ const Chat = () => {
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("pt-BR", { 
-      hour: "2-digit", 
-      minute: "2-digit" 
+    return date.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit"
     });
   };
 
@@ -157,30 +154,27 @@ const Chat = () => {
       </header>
 
       <div className="container mx-auto p-4 max-w-4xl">
-        <Card className="h-[600px] flex flex-col">
+        <Card className="h-[600px] flex flex-col shadow-elegant">
           <CardHeader className="pb-4">
-            <CardTitle className="text-center">
+            <CardTitle className="text-center text-brand-primary">
               💬 Conversa com {partner.name}
             </CardTitle>
           </CardHeader>
-          
+
           <CardContent className="flex-1 flex flex-col">
-            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto space-y-4 mb-4 p-4 bg-secondary/20 rounded-lg">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.isOwn ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.isOwn 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted text-muted-foreground"
-                  }`}>
+                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                    message.isOwn
+                      ? "bg-brand-accent text-white"
+                      : "bg-white text-brand-primary"
+                  } shadow`}>
                     <p className="text-sm">{message.content}</p>
-                    <p className={`text-xs mt-1 ${
-                      message.isOwn ? "text-primary-foreground/70" : "text-muted-foreground/70"
-                    }`}>
+                    <p className="text-xs mt-1 opacity-70 text-right">
                       {formatTime(message.timestamp)}
                     </p>
                   </div>
@@ -189,7 +183,6 @@ const Chat = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Message Input */}
             <form onSubmit={handleSendMessage} className="flex space-x-2">
               <Input
                 value={newMessage}
@@ -203,11 +196,10 @@ const Chat = () => {
             </form>
           </CardContent>
         </Card>
-        
-        {/* Match Info */}
-        <Card className="mt-4">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-center space-x-2 text-match">
+
+        <Card className="mt-4 shadow-elegant">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center space-x-2 text-brand-accent">
               <span className="text-2xl">💖</span>
               <p className="text-sm">
                 Vocês fizeram match! Agora podem conversar livremente.
