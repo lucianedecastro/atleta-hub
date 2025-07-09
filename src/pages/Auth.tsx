@@ -19,30 +19,92 @@ const Auth = () => {
     e.preventDefault();
 
     if (isLogin) {
+      // Lógica de Login
       if (email && password) {
-        localStorage.setItem("user", JSON.stringify({
-          email,
-          userType: userType || "athlete",
-          name: name || "Usuário"
-        }));
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          // Verifica se o usuário existe e se a senha está "correta" (simulação)
+          // Em um backend real, você faria uma chamada à API para verificar credenciais e status de e-mail.
+          if (user.email === email && user.password === password) {
+            // **Verificação de Validação de E-mail no Login**
+            if (!user.emailValidated) {
+              toast({
+                title: "Confirmação de E-mail Necessária",
+                description: "Por favor, confirme seu e-mail antes de fazer login.",
+                variant: "destructive"
+              });
+              navigate("/confirm-email"); // Redireciona para a tela de confirmação
+              return;
+            }
+
+            // Login bem-sucedido
+            localStorage.setItem("user", JSON.stringify({
+              email,
+              userType: user.userType, // Mantém o tipo de usuário existente
+              name: user.name, // Mantém o nome existente
+              emailValidated: user.emailValidated // Mantém o status de validação
+            }));
+
+            toast({
+              title: "Login realizado com sucesso!",
+              description: "Bem-vindo ao AtletaHub",
+            });
+            navigate("/dashboard");
+          } else {
+            toast({
+              title: "Erro de Login",
+              description: "E-mail ou senha inválidos.",
+              variant: "destructive"
+            });
+          }
+        } else {
+            toast({
+                title: "Erro de Login",
+                description: "Usuário não encontrado. Por favor, cadastre-se.",
+                variant: "destructive"
+            });
+        }
+      } else {
         toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo ao AtletaHub",
+          title: "Erro de Login",
+          description: "Por favor, preencha e-mail e senha.",
+          variant: "destructive"
         });
-        navigate("/dashboard");
       }
     } else {
+      // Lógica de Cadastro
       if (name && email && password && userType) {
+        // Validação de Frontend: Impedir cadastro como 'admin'
+        if (userType === "admin") {
+          toast({
+            title: "Erro no Cadastro",
+            description: "Não é possível cadastrar como administrador por aqui.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Salva o usuário no localStorage com emailValidated: false
         localStorage.setItem("user", JSON.stringify({
           email,
           userType,
-          name
+          name,
+          password, // Em um sistema real, a senha nunca seria salva no localStorage
+          emailValidated: false // O email ainda não foi validado
         }));
+
         toast({
           title: "Cadastro realizado com sucesso!",
-          description: "Bem-vindo ao AtletaHub",
+          description: "Por favor, verifique seu e-mail para confirmar sua conta.",
         });
-        navigate("/dashboard");
+        navigate("/confirm-email"); // Redireciona para a tela de confirmação
+      } else {
+        toast({
+            title: "Erro no Cadastro",
+            description: "Por favor, preencha todos os campos para se cadastrar.",
+            variant: "destructive"
+        });
       }
     }
   };
@@ -111,7 +173,6 @@ const Auth = () => {
                     <SelectContent>
                       <SelectItem value="athlete">Atleta</SelectItem>
                       <SelectItem value="brand">Marca</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

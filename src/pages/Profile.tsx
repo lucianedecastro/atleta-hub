@@ -3,50 +3,33 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { User, Building, ArrowLeft } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 
-interface User {
+// Definindo a interface UserData com a nova propriedade midiakitUrl
+interface UserData {
   email: string;
   userType: string;
   name: string;
+  id: string; // Adicionando ID ao User
+  sport?: string;
+  height?: string;
+  weight?: string;
+  marketTime?: string;
+  sponsoredAthletes?: number;
+  midiakitUrl?: string; // ✅ NOVA PROPRIEDADE: midiakitUrl (opcional)
 }
-
-interface AthleteProfile {
-  height: string;
-  weight: string;
-  sport: string;
-  achievements: string;
-  history: string;
-}
-
-interface BrandProfile {
-  marketTime: string;
-  sponsoredAthletes: string;
-  description: string;
-  budget: string;
-}
-
 
 const Profile = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [athleteProfile, setAthleteProfile] = useState<AthleteProfile>({
-    height: "",
-    weight: "",
-    sport: "",
-    achievements: "",
-    history: ""
-  });
-  const [brandProfile, setBrandProfile] = useState<BrandProfile>({
-    marketTime: "",
-    sponsoredAthletes: "",
-    description: "",
-    budget: ""
-  });
+  const [user, setUser] = useState<UserData | null>(null);
+  const [name, setName] = useState("");
+  const [sport, setSport] = useState("");
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
+  const [marketTime, setMarketTime] = useState("");
+  const [sponsoredAthletes, setSponsoredAthletes] = useState<number | string>("");
+  const [midiakitUrl, setMidiakitUrl] = useState<string>(""); // ✅ NOVO ESTADO: midiakitUrl
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,26 +38,53 @@ const Profile = () => {
       navigate("/auth");
       return;
     }
-
-    const parsedUser = JSON.parse(userData);
-    setUser(parsedUser);
-
-    const profileData = localStorage.getItem(`profile_${parsedUser.email}`);
-    if (profileData) {
-      const parsed = JSON.parse(profileData);
-      if (parsedUser.userType === "athlete") {
-        setAthleteProfile(parsed);
-      } else {
-        setBrandProfile(parsed);
-      }
+    const parsedUser: UserData = JSON.parse(userData);
+    
+    // Garantir que o ID existe (para consistência com o Dashboard)
+    if (!parsedUser.id) {
+      parsedUser.id = parsedUser.email;
+      localStorage.setItem("user", JSON.stringify(parsedUser));
     }
+
+    setUser(parsedUser);
+    setName(parsedUser.name || "");
+
+    // Carregar informações específicas do tipo de usuário
+    if (parsedUser.userType === "athlete") {
+      setSport(parsedUser.sport || "");
+      setHeight(parsedUser.height || "");
+      setWeight(parsedUser.weight || "");
+    } else if (parsedUser.userType === "brand") {
+      setMarketTime(parsedUser.marketTime || "");
+      setSponsoredAthletes(parsedUser.sponsoredAthletes || "");
+    }
+    
+    // ✅ Carregar o midiakitUrl existente do usuário logado
+    setMidiakitUrl(parsedUser.midiakitUrl || ""); 
   }, [navigate]);
 
-  const handleSave = () => {
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user) return;
 
-    const profileData = user.userType === "athlete" ? athleteProfile : brandProfile;
-    localStorage.setItem(`profile_${user.email}`, JSON.stringify(profileData));
+    const updatedUser: UserData = {
+      ...user,
+      name: name,
+      midiakitUrl: midiakitUrl, // ✅ Salvar o midiakitUrl do estado no localStorage
+    };
+
+    // Salvar informações específicas do tipo de usuário
+    if (user.userType === "athlete") {
+      updatedUser.sport = sport;
+      updatedUser.height = height;
+      updatedUser.weight = weight;
+    } else if (user.userType === "brand") {
+      updatedUser.marketTime = marketTime;
+      updatedUser.sponsoredAthletes = typeof sponsoredAthletes === 'string' ? parseInt(sponsoredAthletes, 10) || 0 : sponsoredAthletes;
+    }
+
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    setUser(updatedUser); // Atualizar o estado local do usuário
 
     toast({
       title: "Perfil atualizado!",
@@ -82,196 +92,104 @@ const Profile = () => {
     });
   };
 
-  const handleAthleteChange = (field: keyof AthleteProfile, value: string) => {
-    setAthleteProfile(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleBrandChange = (field: keyof BrandProfile, value: string) => {
-    setBrandProfile(prev => ({ ...prev, [field]: value }));
-  };
-
-  if (!user) return null;
+  if (!user) return null; // Não renderiza nada se o usuário não estiver logado
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-gradient-primary text-white p-4">
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar
-            </Button>
-            <h1 className="text-2xl font-bold">Meu Perfil</h1>
-          </div>
-          <Badge variant="secondary">
-            {user.userType === "athlete" ? "Atleta" : user.userType === "brand" ? "Marca" : "Admin"}
-          </Badge>
-        </div>
-      </header>
-
-      <main className="container mx-auto p-4 max-w-2xl">
-        <Card className="shadow-elegant">
-          <CardHeader>
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                {user.userType === "athlete" ? (
-                  <User className="w-8 h-8 text-primary" />
-                ) : (
-                  <Building className="w-8 h-8 text-primary" />
-                )}
-              </div>
-              <div>
-                <CardTitle className="text-2xl">{user.name}</CardTitle>
-                <p className="text-muted-foreground">{user.email}</p>
-              </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-lg">
+        <CardHeader>
+          <CardTitle>Editar Perfil</CardTitle>
+          <CardDescription>
+            Atualize suas informações aqui.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </div>
-          </CardHeader>
 
-          <CardContent className="space-y-6">
-            {user.userType === "athlete" ? (
+            {/* Campos específicos para Atleta */}
+            {user.userType === "athlete" && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="height">Altura</Label>
-                    <Input
-                      id="height"
-                      value={athleteProfile.height}
-                      onChange={(e) => handleAthleteChange("height", e.target.value)}
-                      placeholder="Ex: 1.80m"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="weight">Peso</Label>
-                    <Input
-                      id="weight"
-                      value={athleteProfile.weight}
-                      onChange={(e) => handleAthleteChange("weight", e.target.value)}
-                      placeholder="Ex: 75kg"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="sport">Modalidade</Label>
-                  <Select
-                    value={athleteProfile.sport}
-                    onValueChange={(value) => handleAthleteChange("sport", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione sua modalidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="futebol">Futebol</SelectItem>
-                      <SelectItem value="volei">Vôlei</SelectItem>
-                      <SelectItem value="basquete">Basquete</SelectItem>
-                      <SelectItem value="natacao">Natação</SelectItem>
-                      <SelectItem value="atletismo">Atletismo</SelectItem>
-                      <SelectItem value="tenis">Tênis</SelectItem>
-                      <SelectItem value="jiu-jitsu">Jiu-Jitsu</SelectItem>
-                      <SelectItem value="surf">Surf</SelectItem>
-                      <SelectItem value="outros">Outros</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="achievements">Conquistas e Rankings</Label>
-                  <Textarea
-                    id="achievements"
-                    value={athleteProfile.achievements}
-                    onChange={(e) => handleAthleteChange("achievements", e.target.value)}
-                    placeholder="Descreva suas principais conquistas, títulos e rankings..."
-                    rows={3}
+                <div className="space-y-2">
+                  <Label htmlFor="sport">Modalidade Esportiva</Label>
+                  <Input
+                    id="sport"
+                    value={sport}
+                    onChange={(e) => setSport(e.target.value)}
                   />
                 </div>
-
-                <div>
-                  <Label htmlFor="history">Histórico</Label>
-                  <Textarea
-                    id="history"
-                    value={athleteProfile.history}
-                    onChange={(e) => handleAthleteChange("history", e.target.value)}
-                    placeholder="Conte sua trajetória esportiva..."
-                    rows={3}
+                <div className="space-y-2">
+                  <Label htmlFor="height">Altura (ex: 1.80m)</Label>
+                  <Input
+                    id="height"
+                    value={height}
+                    onChange={(e) => setHeight(e.target.value)}
                   />
                 </div>
-
-                <Button onClick={handleSave} className="w-full" variant="hero">
-                  Salvar Perfil
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Peso (ex: 75kg)</Label>
+                  <Input
+                    id="weight"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                  />
+                </div>
               </>
-            ) : user.userType === "brand" ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="marketTime">Tempo no mercado</Label>
-                    <Input
-                      id="marketTime"
-                      value={brandProfile.marketTime}
-                      onChange={(e) => handleBrandChange("marketTime", e.target.value)}
-                      placeholder="Ex: 25 anos"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="sponsoredAthletes">Atletas patrocinados</Label>
-                    <Input
-                      id="sponsoredAthletes"
-                      value={brandProfile.sponsoredAthletes}
-                      onChange={(e) => handleBrandChange("sponsoredAthletes", e.target.value)}
-                      placeholder="Ex: 150"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="description">Descrição da marca</Label>
-                  <Textarea
-                    id="description"
-                    value={brandProfile.description}
-                    onChange={(e) => handleBrandChange("description", e.target.value)}
-                    placeholder="Descreva sua marca, valores e o que vocês buscam em um atleta..."
-                    rows={4}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="budget">Orçamento para patrocínios</Label>
-                  <Select
-                    value={brandProfile.budget}
-                    onValueChange={(value) => handleBrandChange("budget", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a faixa de orçamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ate-5k">Até R$ 5.000</SelectItem>
-                      <SelectItem value="5k-20k">R$ 5.000 - R$ 20.000</SelectItem>
-                      <SelectItem value="20k-50k">R$ 20.000 - R$ 50.000</SelectItem>
-                      <SelectItem value="50k-100k">R$ 50.000 - R$ 100.000</SelectItem>
-                      <SelectItem value="acima-100k">Acima de R$ 100.000</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Button onClick={handleSave} className="w-full" variant="hero">
-                  Salvar Perfil
-                </Button>
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <div className="mb-4">
-                  <Building className="w-16 h-16 mx-auto text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Perfil Administrativo</h3>
-                <p className="text-muted-foreground max-w-xl mx-auto">
-                  Você possui acesso administrativo completo à plataforma AtletaHub. 
-                  Através do dashboard você pode visualizar todos os perfis e estatísticas do sistema.
-                </p>
-              </div>
             )}
-          </CardContent>
-        </Card>
-      </main>
+
+            {/* Campos específicos para Marca */}
+            {user.userType === "brand" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="marketTime">Tempo no Mercado (ex: 10 anos)</Label>
+                  <Input
+                    id="marketTime"
+                    value={marketTime}
+                    onChange={(e) => setMarketTime(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sponsoredAthletes">Número de Atletas Patrocinados</Label>
+                  <Input
+                    id="sponsoredAthletes"
+                    type="number"
+                    value={sponsoredAthletes}
+                    onChange={(e) => setSponsoredAthletes(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* ✅ NOVO CAMPO: Link do Midiakit (PDF) */}
+            <div className="space-y-2">
+              <Label htmlFor="midiakitUrl">Link do Midiakit (PDF)</Label>
+              <Input
+                id="midiakitUrl"
+                type="url" // Usar type="url" para validação básica de formato
+                placeholder="Ex: https://seusite.com/midiakit.pdf"
+                value={midiakitUrl}
+                onChange={(e) => setMidiakitUrl(e.target.value)}
+              />
+              <p className="text-sm text-muted-foreground">
+                Insira um link direto para seu arquivo PDF de midiakit.
+              </p>
+            </div>
+
+            <Button type="submit" className="w-full">Salvar Perfil</Button>
+            <Button variant="outline" className="w-full mt-2" onClick={() => navigate("/dashboard")}>
+              Voltar ao Dashboard
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

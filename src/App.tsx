@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
+import ConfirmEmail from "./pages/ConfirmEmail"; // Importe o novo componente ConfirmEmail
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,8 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/chat/:matchId" element={<Chat />} />
+          {/* Nova rota para a confirmação de e-mail */}
+          <Route path="/confirm-email" element={<ConfirmEmail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -11,6 +11,7 @@ interface User {
   email: string;
   userType: string;
   name: string;
+  id: string; // Adicionado para consistência com Dashboard.tsx
 }
 
 interface Message {
@@ -25,6 +26,17 @@ interface ChatPartner {
   id: string;
   name: string;
   type: "athlete" | "brand";
+}
+
+// Para simular os dados de interesse no localStorage (copia do Dashboard.tsx)
+interface StoredInterests {
+  [currentUserId: string]: {
+    [targetProfileId: string]: {
+      interestedByMe: boolean;
+      interestedInMe: boolean;
+      matched: boolean;
+    };
+  };
 }
 
 const Chat = () => {
@@ -43,19 +55,44 @@ const Chat = () => {
       return;
     }
 
-    const parsedUser = JSON.parse(userData);
+    const parsedUser: User = JSON.parse(userData);
+    // Garantir que o user.id existe para a lógica de match
+    if (!parsedUser.id) {
+        parsedUser.id = parsedUser.email;
+        localStorage.setItem("user", JSON.stringify(parsedUser));
+    }
     setUser(parsedUser);
 
     const mockPartners: Record<string, ChatPartner> = {
-      "1": { id: "1", name: "João Silva", type: "athlete" },
-      "2": { id: "2", name: "Maria Santos", type: "athlete" },
-      "3": { id: "3", name: "Nike Brasil", type: "brand" },
-      "4": { id: "4", name: "Adidas", type: "brand" }
+      "athlete-1": { id: "athlete-1", name: "João Silva", type: "athlete" },
+      "athlete-2": { id: "athlete-2", name: "Maria Santos", type: "athlete" },
+      "brand-1": { id: "brand-1", name: "Nike Brasil", type: "brand" },
+      "brand-2": { id: "brand-2", name: "Adidas", type: "brand" },
+      "athlete-3": { id: "athlete-3", name: "Carlos Mendes", type: "athlete" },
+      "athlete-4": { id: "athlete-4", name: "Ana Costa", type: "athlete" }
     };
 
     if (matchId && mockPartners[matchId]) {
+      const storedInterests: StoredInterests = JSON.parse(localStorage.getItem("userInterests") || "{}");
+      const currentUserToPartnerInterest = storedInterests[parsedUser.id]?.[matchId];
+      const partnerToCurrentUserInterest = storedInterests[matchId]?.[parsedUser.id];
+
+      // Verificar se houve match mútuo
+      const hasMatch = currentUserToPartnerInterest?.matched && partnerToCurrentUserInterest?.matched;
+
+      if (!hasMatch) {
+        toast({
+          title: "Acesso Negado!",
+          description: "Você só pode conversar com perfis que fizeram match com você.",
+          variant: "destructive"
+        });
+        navigate("/dashboard"); // Redirecionar se não houver match
+        return;
+      }
+
       setPartner(mockPartners[matchId]);
 
+      // Carregar mensagens mockadas
       const mockMessages: Message[] = [
         {
           id: "1",
@@ -81,6 +118,13 @@ const Chat = () => {
       ];
 
       setMessages(mockMessages);
+    } else {
+      toast({
+        title: "Erro de Chat",
+        description: "Parceiro de chat não encontrado.",
+        variant: "destructive"
+      });
+      navigate("/dashboard");
     }
   }, [matchId, navigate]);
 
@@ -104,6 +148,7 @@ const Chat = () => {
     setMessages(prev => [...prev, message]);
     setNewMessage("");
 
+    // Simulação de resposta automática
     setTimeout(() => {
       const response: Message = {
         id: (Date.now() + 1).toString(),
@@ -123,7 +168,7 @@ const Chat = () => {
     });
   };
 
-  if (!user || !partner) return null;
+  if (!user || !partner) return null; // Retorna null enquanto carrega ou se não há parceiro
 
   return (
     <div className="min-h-screen bg-background">

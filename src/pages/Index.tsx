@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; // Importe corretamente
 import {
   Card,
   CardContent,
@@ -74,10 +74,19 @@ const Index = () => {
             A plataforma que conecta atletas e marcas através de um sistema inteligente de match
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
+            {/* ✅ CORREÇÃO AQUI: Para o botão "Começar Agora" */}
+            {/* Se você quer o gradiente roxo/laranja, use variant="hero" */}
+            <Button size="lg" variant="hero" onClick={() => navigate("/auth")}> {/* */}
               Começar Agora
             </Button>
-            <Button size="lg" variant="ghost" onClick={() => navigate("/auth")}>
+            {/* ✅ CORREÇÃO AQUI: Para o botão "Já tenho conta" */}
+            {/* Se você quer ele transparente com texto visível e que só mude no hover, 'ghost' é o correto. */}
+            {/* O problema anterior é que o 'ghost' só tinha hover, mas o texto deveria ser visível. */}
+            {/* Pelo que entendi na imagem image_f3a099.jpg, ele é branco com texto preto, então outline ou default são melhores */}
+            {/* No button.tsx que você compartilhou, o ghost é hover:bg-accent. Isso o deixa transparente. */}
+            {/* Se você quer que ele seja branco com texto preto, e borda, use 'outline'. */}
+            {/* Se quer só texto preto, use 'link' ou aplique 'text-foreground' diretamente se 'ghost' não estiver fazendo isso. */}
+            <Button size="lg" variant="link" onClick={() => navigate("/auth")}> {/* `link` é mais comum para "já tenho conta" ou "entrar" */}
               Já tenho conta
             </Button>
           </div>
@@ -199,7 +208,12 @@ const Index = () => {
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             Junte-se a milhares de atletas e marcas que já estão conectados no AtletaHub
           </p>
-          <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
+          {/* ✅ CORREÇÃO AQUI: Para o botão "Criar Conta Gratuita" */}
+          {/* Se você quer o roxo sólido, use variant="default" (que é bg-primary) ou crie uma nova variante. */}
+          {/* Baseado na imagem image_f39fdb.png, o botão é roxo. No seu button.tsx, `default` é `bg-primary`, `primary` é laranja. */}
+          {/* O `bg-accent` seria roxo. Vamos usar `bg-accent` diretamente aqui, ou criar uma nova variante. */}
+          {/* A melhor abordagem seria usar `bg-accent text-accent-foreground` se você quer o roxo. */}
+          <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => navigate("/auth")}> {/* */}
             Criar Conta Gratuita
           </Button>
         </div>

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
 */
 
@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 16 100% 66%;
+    --primary: 16 100% 66%; /* Um laranja/vermelho mais vibrante */
     --primary-foreground: 0 0% 100%;
     --primary-glow: 16 100% 76%;
 
@@ -27,7 +27,7 @@ All colors MUST be HSL.
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 268 83% 58%;
+    --accent: 268 83% 58%; /* Um roxo/magenta */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
@@ -37,8 +37,15 @@ All colors MUST be HSL.
     --input: 214.3 31.8% 91.4%;
     --ring: 16 100% 66%;
 
-    --match: 348 83% 47%;
+    --match: 348 83% 47%; /* Vermelho mais forte para match */
     --match-foreground: 0 0% 100%;
+
+    /* ✅ NOVAS CORES ADICIONADAS */
+    --info: 215 90.0% 43.5%; /* Um azul para "Recebeu Interesse!" */
+    --info-foreground: 210 40% 98%; /* Texto claro para contraste */
+
+    --interested: 142.1 76.2% 36.3%; /* Um verde para "Interessado" */
+    --interested-foreground: 210 40% 98%; /* Texto claro para contraste */
 
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
     --gradient-hero: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
@@ -49,19 +56,12 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -93,6 +93,7 @@ All colors MUST be HSL.
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -101,6 +102,13 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* ✅ NOVAS CORES ADICIONADAS PARA DARK MODE */
+    --info: 215 90.0% 43.5%; /* Você pode manter o mesmo azul ou ajustar para um tom diferente no dark mode */
+    --info-foreground: 210 40% 98%;
+
+    --interested: 142.1 76.2% 36.3%; /* Pode manter o mesmo verde ou ajustar para um tom diferente no dark mode */
+    --interested-foreground: 210 40% 98%;
   }
 }
 
