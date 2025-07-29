@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/services/auth-context";
-import { auth, LoginRequest, RegisterRequest } from "@/services/apiService"; // Importar do novo apiService
+import { auth, LoginRequest, RegisterRequest } from "@/services/apiService"; 
 import { AxiosError } from "axios";
 
 // Enums para melhorar a legibilidade e evitar "magic strings"
