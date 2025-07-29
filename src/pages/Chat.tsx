@@ -1,260 +1,237 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/services/auth-context";
+import {
+  matches,
+  messages,
+  MatchResponse,
+  MessageResponse,
+  SendMessageRequest,
+} from "@/services/apiService"; // Importar do novo apiService
+import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Send, User, Building } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import DOMPurify from 'dompurify'; // Para sanitização de conteúdo
 
-interface User {
-  email: string;
-  userType: string;
-  name: string;
-  id: string; // Adicionado para consistência com Dashboard.tsx
-}
+// Constantes
+// const CHAT_POLLING_INTERVAL_MS = 5000; // Intervalo para polling (manter para exemplo, mas WebSockets são preferíveis)
 
-interface Message {
-  id: string;
-  sender: string;
-  content: string;
-  timestamp: Date;
-  isOwn: boolean;
-}
+// As interfaces Message e Match agora são diretamente as do apiService
+type Message = MessageResponse;
+type Match = MatchResponse;
 
-interface ChatPartner {
-  id: string;
-  name: string;
-  type: "athlete" | "brand";
-}
-
-// Para simular os dados de interesse no localStorage (copia do Dashboard.tsx)
-interface StoredInterests {
-  [currentUserId: string]: {
-    [targetProfileId: string]: {
-      interestedByMe: boolean;
-      interestedInMe: boolean;
-      matched: boolean;
-    };
-  };
-}
-
-const Chat = () => {
-  const { matchId } = useParams();
-  const [user, setUser] = useState<User | null>(null);
-  const [partner, setPartner] = useState<ChatPartner | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+export default function Chat() {
+  const { userData } = useAuth();
   const navigate = useNavigate();
+  const { matchId: matchIdParam } = useParams<{ matchId: string }>();
+
+  // Converte matchId para número de forma segura
+  const matchId = matchIdParam ? parseInt(matchIdParam, 10) : null;
+
+  const [currentMessages, setCurrentMessages] = useState<Message[]>([]); // Renomeado para evitar conflito
+  const [newMessage, setNewMessage] = useState("");
+  const [chatPartnerName, setChatPartnerName] = useState("Carregando...");
+  const [isLoading, setIsLoading] = useState(true); // Estado de carregamento
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
-      navigate("/auth");
+    // Redireciona se userData ou matchId não estiverem disponíveis
+    // O parseInt retorna NaN para strings inválidas, o que é tratado como "falsy"
+    if (!userData || !matchId || isNaN(matchId)) {
+      toast({
+        title: "Erro de Navegação",
+        description: "Dados do usuário ou ID do match inválidos.",
+        variant: "destructive",
+      });
+      navigate("/");
       return;
     }
 
-    const parsedUser: User = JSON.parse(userData);
-    // Garantir que o user.id existe para a lógica de match
-    if (!parsedUser.id) {
-        parsedUser.id = parsedUser.email;
-        localStorage.setItem("user", JSON.stringify(parsedUser));
-    }
-    setUser(parsedUser);
+    const fetchMatchDetailsAndMessages = async () => {
+      setIsLoading(true);
+      try {
+        // Busca todos os matches do usuário logado
+        const allMatchesResponse = await matches.getMatches();
+        const foundMatch = allMatchesResponse.data.find(
+          (m) => m.id === matchId
+        );
 
-    const mockPartners: Record<string, ChatPartner> = {
-      "athlete-1": { id: "athlete-1", name: "João Silva", type: "athlete" },
-      "athlete-2": { id: "athlete-2", name: "Maria Santos", type: "athlete" },
-      "brand-1": { id: "brand-1", name: "Nike Brasil", type: "brand" },
-      "brand-2": { id: "brand-2", name: "Adidas", type: "brand" },
-      "athlete-3": { id: "athlete-3", name: "Carlos Mendes", type: "athlete" },
-      "athlete-4": { id: "athlete-4", name: "Ana Costa", type: "athlete" }
+        if (foundMatch) {
+          // Usa o nome do outro usuário já fornecido pelo backend
+          setChatPartnerName(foundMatch.nome_outro_usuario);
+        } else {
+          setChatPartnerName("Usuário não encontrado");
+          toast({
+            title: "Erro",
+            description: "Match não encontrado ou você não faz parte dele.",
+            variant: "destructive",
+          });
+          navigate("/dashboard");
+          return; // Sai da função se o match não for encontrado
+        }
+
+        // Busca as mensagens para o match específico
+        const messagesResponse = await messages.getByMatchId(matchId);
+        setCurrentMessages(messagesResponse.data);
+
+      } catch (err) {
+        console.error("Erro ao carregar dados do chat:", err);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar o chat.",
+          variant: "destructive",
+        });
+        navigate("/dashboard");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    if (matchId && mockPartners[matchId]) {
-      const storedInterests: StoredInterests = JSON.parse(localStorage.getItem("userInterests") || "{}");
-      const currentUserToPartnerInterest = storedInterests[parsedUser.id]?.[matchId];
-      const partnerToCurrentUserInterest = storedInterests[matchId]?.[parsedUser.id];
+    fetchMatchDetailsAndMessages();
 
-      // Verificar se houve match mútuo
-      const hasMatch = currentUserToPartnerInterest?.matched && partnerToCurrentUserInterest?.matched;
+    // REMOVIDO: Polling para mensagens.
+    // Sugestão Crucial: Para um chat em tempo real, use WebSockets (ex: Socket.IO).
+    // O polling é ineficiente e cria tráfego desnecessário.
+    // Para fins de demonstração ou fallback simples, pode-se reativar o polling:
+    // const interval = setInterval(fetchMessages, CHAT_POLLING_INTERVAL_MS);
+    // return () => clearInterval(interval);
 
-      if (!hasMatch) {
-        toast({
-          title: "Acesso Negado!",
-          description: "Você só pode conversar com perfis que fizeram match com você.",
-          variant: "destructive"
-        });
-        navigate("/dashboard"); // Redirecionar se não houver match
-        return;
-      }
-
-      setPartner(mockPartners[matchId]);
-
-      // Carregar mensagens mockadas
-      const mockMessages: Message[] = [
-        {
-          id: "1",
-          sender: mockPartners[matchId].name,
-          content: "Olá! Vi seu perfil e fiquei interessado em uma parceria!",
-          timestamp: new Date(Date.now() - 3600000),
-          isOwn: false
-        },
-        {
-          id: "2",
-          sender: parsedUser.name,
-          content: "Oi! Obrigado pelo interesse. Vamos conversar!",
-          timestamp: new Date(Date.now() - 1800000),
-          isOwn: true
-        },
-        {
-          id: "3",
-          sender: mockPartners[matchId].name,
-          content: "Perfeito! Podemos marcar uma call para discutir os detalhes?",
-          timestamp: new Date(Date.now() - 900000),
-          isOwn: false
+    // TODO: Implementar WebSockets para chat em tempo real.
+    // Exemplo de como ficaria a integração se WebSockets fossem usados:
+    /*
+    const socket = new WebSocket('ws://localhost:8080/chat'); // Exemplo de URL
+    socket.onopen = () => console.log('WebSocket Conectado');
+    socket.onmessage = (event) => {
+        const newMessage = JSON.parse(event.data);
+        if (newMessage.id_match === matchId) { // Ajuste para snake_case
+            setCurrentMessages((prev) => [...prev, newMessage]);
         }
-      ];
+    };
+    socket.onclose = () => console.log('WebSocket Desconectado');
+    socket.onerror = (error) => console.error('WebSocket Erro:', error);
+    return () => {
+        socket.close();
+    };
+    */
+  }, [userData, navigate, matchId]);
 
-      setMessages(mockMessages);
-    } else {
-      toast({
-        title: "Erro de Chat",
-        description: "Parceiro de chat não encontrado.",
-        variant: "destructive"
-      });
-      navigate("/dashboard");
-    }
-  }, [matchId, navigate]);
-
+  // Efeito para rolar para o final da conversa sempre que as mensagens são atualizadas
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [currentMessages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async () => {
+    if (!userData || !matchId || isNaN(matchId) || newMessage.trim() === "") {
+      toast({
+        title: "Aviso",
+        description: "Não é possível enviar uma mensagem vazia ou com dados inválidos.",
+        variant: "default",
+      });
+      return;
+    }
 
-    if (!newMessage.trim() || !user || !partner) return;
-
-    const message: Message = {
-      id: Date.now().toString(),
-      sender: user.name,
-      content: newMessage,
-      timestamp: new Date(),
-      isOwn: true
-    };
-
-    setMessages(prev => [...prev, message]);
-    setNewMessage("");
-
-    // Simulação de resposta automática
-    setTimeout(() => {
-      const response: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: partner.name,
-        content: "Recebi sua mensagem! Vou analisar e retorno em breve.",
-        timestamp: new Date(),
-        isOwn: false
+    try {
+      const payload: SendMessageRequest = { // Usando a interface de request
+        id_match: matchId, // Corrigido para snake_case
+        id_remetente: userData.id, // Corrigido para snake_case
+        texto: newMessage.trim(), // Garante que o texto enviado não tem espaços extras
       };
-      setMessages(prev => [...prev, response]);
-    }, 2000);
+
+      // Importante: O backend também deve sanitizar o texto da mensagem.
+      const response = await messages.send(payload); // Usando a função do apiService
+      setCurrentMessages((prevMessages) => [...prevMessages, response.data]);
+      setNewMessage("");
+    } catch (err) {
+      console.error("Erro ao enviar mensagem:", err);
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar a mensagem.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  };
+  if (!userData) {
+    // Pode exibir um spinner ou redirecionar mais rapidamente
+    return <div className="flex justify-center items-center h-screen text-lg font-semibold">Carregando usuário...</div>;
+  }
 
-  if (!user || !partner) return null; // Retorna null enquanto carrega ou se não há parceiro
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen text-lg font-semibold">Carregando chat...</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-gradient-primary text-white p-4">
-        <div className="container mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar
-            </Button>
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                {partner.type === "athlete" ? (
-                  <User className="w-5 h-5" />
-                ) : (
-                  <Building className="w-5 h-5" />
-                )}
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">{partner.name}</h1>
-                <Badge variant="secondary">
-                  {partner.type === "athlete" ? "Atleta" : "Marca"}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="flex-1 space-y-4 p-8 pt-6 h-screen flex flex-col">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">
+          Chat com {chatPartnerName}
+        </h2>
+        <Link to="/dashboard">
+          <Button variant="outline">Voltar para o Dashboard</Button>
+        </Link>
+      </div>
 
-      <div className="container mx-auto p-4 max-w-4xl">
-        <Card className="h-[600px] flex flex-col shadow-elegant">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-center text-brand-primary">
-              💬 Conversa com {partner.name}
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent className="flex-1 flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4 p-4 bg-secondary/20 rounded-lg">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.isOwn ? "justify-end" : "justify-start"}`}
-                >
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                    message.isOwn
-                      ? "bg-brand-accent text-white"
-                      : "bg-white text-brand-primary"
-                  } shadow`}>
-                    <p className="text-sm">{message.content}</p>
-                    <p className="text-xs mt-1 opacity-70 text-right">
-                      {formatTime(message.timestamp)}
-                    </p>
+      <Card className="flex flex-col flex-1"> {/* Flex-1 para ocupar espaço disponível */}
+        <CardHeader>
+          <CardTitle>Conversa</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 overflow-hidden p-0"> {/* overflow-hidden e p-0 para ScrollArea gerenciar */}
+          <ScrollArea className="h-full px-6 py-4"> {/* px-6 py-4 para padding interno */}
+            <div className="space-y-4">
+              {currentMessages.length === 0 && !isLoading ? (
+                <p className="text-center text-muted-foreground">Nenhuma mensagem ainda. Comece a conversar!</p>
+              ) : (
+                currentMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.id_remetente === userData.id // Corrigido para snake_case
+                        ? "justify-end"
+                        : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[70%] p-3 rounded-lg ${
+                        message.id_remetente === userData.id // Corrigido para snake_case
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
+                      {/* XSS Prevention: Sanitiza o texto da mensagem antes de renderizar */}
+                      <p className="text-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.texto) }} />
+                      <p className="text-xs mt-1 opacity-70">
+                        {new Date(message.data_envio).toLocaleTimeString()} {/* Corrigido para snake_case */}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
               <div ref={messagesEndRef} />
             </div>
-
-            <form onSubmit={handleSendMessage} className="flex space-x-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Digite sua mensagem..."
-                className="flex-1"
-              />
-              <Button type="submit" variant="hero" size="sm">
-                <Send className="w-4 h-4" />
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card className="mt-4 shadow-elegant">
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center space-x-2 text-brand-accent">
-              <span className="text-2xl">💖</span>
-              <p className="text-sm">
-                Vocês fizeram match! Agora podem conversar livremente.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </ScrollArea>
+        </CardContent>
+        <div className="p-6 border-t flex space-x-2">
+          <Input
+            type="text"
+            placeholder="Digite sua mensagem..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSendMessage();
+              }
+            }}
+            aria-label="Digite sua mensagem"
+            disabled={isLoading} // Desabilita input durante carregamento
+          />
+          <Button onClick={handleSendMessage} disabled={isLoading || newMessage.trim() === ""}>
+            Enviar
+          </Button>
+        </div>
+      </Card>
     </div>
   );
-};
-
-export default Chat;
+}

@@ -1,197 +1,232 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/services/auth-context";
+import {
+  users,
+  profile as profileApi,
+  modalidades, // 1. Importa a nova API de modalidades
+  UpdateAtletaProfileRequest,
+  UpdateMarcaProfileRequest,
+} from "@/services/apiService";
+import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Importa o componente Select
 
-// Definindo a interface UserData com a nova propriedade midiakitUrl
-interface UserData {
-  email: string;
-  userType: string;
-  name: string;
-  id: string; // Adicionando ID ao User
-  sport?: string;
-  height?: string;
-  weight?: string;
-  marketTime?: string;
-  sponsoredAthletes?: number;
-  midiakitUrl?: string; // ✅ NOVA PROPRIEDADE: midiakitUrl (opcional)
-}
+// Enums, Interfaces e Configs (sem alterações aqui)
+enum UserType { ATLETA = "ATLETA", MARCA = "MARCA" }
+interface AtletaProfileData { id: number; nome: string; email: string; data_nascimento: string | null; telefone_contato: string | null; idade: number | null; altura: number | null; peso: number | null; modalidade: string | null; posicao: string | null; competicoes_titulos: string | null; historico: string | null; midiakit_url: string | null; observacoes: string | null; redes_social: string | null; }
+interface MarcaProfileData { id: number; nome: string; email: string; produto: string | null; tempo_mercado: number | null; atletas_patrocinados: string | null; tipo_investimento: string | null; redes_social: string | null; }
+interface FieldConfig<T> { key: keyof T; label: string; inputType?: React.HTMLInputTypeAttribute; isTextArea?: boolean; }
+const atletaFieldConfigs: FieldConfig<AtletaProfileData>[] = [ { key: "nome", label: "Nome" }, { key: "email", label: "Email", inputType: "email" }, { key: "data_nascimento", label: "Data de Nascimento", inputType: "date" }, { key: "telefone_contato", label: "Telefone de Contato", inputType: "tel" }, { key: "idade", label: "Idade", inputType: "number" }, { key: "altura", label: "Altura (cm)", inputType: "number" }, { key: "peso", label: "Peso (kg)", inputType: "number" }, { key: "modalidade", label: "Modalidade" }, { key: "posicao", label: "Posição" }, { key: "competicoes_titulos", label: "Competições e Títulos", isTextArea: true }, { key: "historico", label: "Histórico", isTextArea: true }, { key: "midiakit_url", label: "Link do Mídia Kit", inputType: "url" }, { key: "observacoes", label: "Observações", isTextArea: true }, { key: "redes_social", label: "Redes Sociais", inputType: "url" }, ];
+const marcaFieldConfigs: FieldConfig<MarcaProfileData>[] = [ { key: "nome", label: "Nome" }, { key: "email", label: "Email", inputType: "email" }, { key: "produto", label: "Produto Principal" }, { key: "tempo_mercado", label: "Tempo no Mercado (anos)", inputType: "number" }, { key: "atletas_patrocinados", label: "Atletas Patrocinados", isTextArea: true }, { key: "tipo_investimento", label: "Tipo de Investimento" }, { key: "redes_social", label: "Redes Sociais", inputType: "url" }, ];
+function isAtletaProfileData(profile: any): profile is AtletaProfileData { return "modalidade" in profile; }
 
-const Profile = () => {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [name, setName] = useState("");
-  const [sport, setSport] = useState("");
-  const [height, setHeight] = useState("");
-  const [weight, setWeight] = useState("");
-  const [marketTime, setMarketTime] = useState("");
-  const [sponsoredAthletes, setSponsoredAthletes] = useState<number | string>("");
-  const [midiakitUrl, setMidiakitUrl] = useState<string>(""); // ✅ NOVO ESTADO: midiakitUrl
-
+export default function Profile() {
+  const { userData } = useAuth();
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+
+  const [profileData, setProfileData] = useState<AtletaProfileData | MarcaProfileData | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // 2. Novo estado para a lista de modalidades
+  const [modalidadesList, setModalidadesList] = useState<string[]>([]);
+
+  const isMyProfile = useMemo(() => userData?.id.toString() === id, [userData, id]);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
     if (!userData) {
-      navigate("/auth");
+      navigate("/");
       return;
     }
-    const parsedUser: UserData = JSON.parse(userData);
-    
-    // Garantir que o ID existe (para consistência com o Dashboard)
-    if (!parsedUser.id) {
-      parsedUser.id = parsedUser.email;
-      localStorage.setItem("user", JSON.stringify(parsedUser));
-    }
 
-    setUser(parsedUser);
-    setName(parsedUser.name || "");
+    // 3. useEffect atualizado para buscar dados em paralelo
+    const fetchProfileAndModalidades = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let profilePromise;
+        if (isMyProfile) {
+          profilePromise = userData.userType === 'atleta'
+            ? profileApi.getAtletaProfile()
+            : profileApi.getMarcaProfile();
+        } else if (id) {
+          profilePromise = users.getById(parseInt(id, 10));
+        } else {
+          throw new Error("ID do perfil não fornecido.");
+        }
 
-    // Carregar informações específicas do tipo de usuário
-    if (parsedUser.userType === "athlete") {
-      setSport(parsedUser.sport || "");
-      setHeight(parsedUser.height || "");
-      setWeight(parsedUser.weight || "");
-    } else if (parsedUser.userType === "brand") {
-      setMarketTime(parsedUser.marketTime || "");
-      setSponsoredAthletes(parsedUser.sponsoredAthletes || "");
-    }
-    
-    // ✅ Carregar o midiakitUrl existente do usuário logado
-    setMidiakitUrl(parsedUser.midiakitUrl || ""); 
-  }, [navigate]);
+        // Busca o perfil e as modalidades ao mesmo tempo
+        const [profileResponse, modalidadesResponse] = await Promise.all([
+          profilePromise,
+          modalidades.getAll()
+        ]);
+        
+        setProfileData(profileResponse.data);
+        setModalidadesList(modalidadesResponse.data);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    const updatedUser: UserData = {
-      ...user,
-      name: name,
-      midiakitUrl: midiakitUrl, // ✅ Salvar o midiakitUrl do estado no localStorage
+      } catch (err) {
+        console.error("Erro ao buscar dados do perfil:", err);
+        setError("Não foi possível carregar os dados do perfil.");
+        toast({ title: "Erro", description: "Não foi possível carregar os dados do perfil.", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
     };
 
-    // Salvar informações específicas do tipo de usuário
-    if (user.userType === "athlete") {
-      updatedUser.sport = sport;
-      updatedUser.height = height;
-      updatedUser.weight = weight;
-    } else if (user.userType === "brand") {
-      updatedUser.marketTime = marketTime;
-      updatedUser.sponsoredAthletes = typeof sponsoredAthletes === 'string' ? parseInt(sponsoredAthletes, 10) || 0 : sponsoredAthletes;
-    }
+    fetchProfileAndModalidades();
+  }, [id, userData, isMyProfile, navigate]);
 
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    setUser(updatedUser); // Atualizar o estado local do usuário
-
-    toast({
-      title: "Perfil atualizado!",
-      description: "Suas informações foram salvas com sucesso.",
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    setProfileData((prev) => {
+      if (!prev) return null;
+      let parsedValue: string | number | null = value;
+      if (type === "number") {
+        const numValue = parseFloat(value);
+        parsedValue = isNaN(numValue) ? null : numValue;
+      } else if (value === "") {
+        parsedValue = null;
+      }
+      return { ...prev, [name]: parsedValue };
     });
   };
 
-  if (!user) return null; // Não renderiza nada se o usuário não estiver logado
+  // 4. Nova função para lidar com a mudança no Select
+  const handleSelectChange = (value: string, fieldName: string) => {
+    setProfileData((prev) => {
+      if (!prev) return null;
+      return { ...prev, [fieldName]: value };
+    });
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profileData || !userData) return;
+    try {
+      if (isAtletaProfileData(profileData)) {
+        await profileApi.updateAtletaProfile(profileData as UpdateAtletaProfileRequest);
+      } else {
+        await profileApi.updateMarcaProfile(profileData as UpdateMarcaProfileRequest);
+      }
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" });
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Erro ao salvar perfil:", err);
+      toast({ title: "Erro", description: "Não foi possível salvar as alterações no perfil.", variant: "destructive" });
+    }
+  };
+
+  const ProfileFields = ({ profile, isEditing, isMyProfile, handleInputChange, handleSelectChange, modalidadesList }: any) => {
+    const configs = isAtletaProfileData(profile) ? atletaFieldConfigs : marcaFieldConfigs;
+    return (
+      <div className="space-y-4">
+        {configs.map((field) => {
+          const value = profile[field.key]?.toString() || "";
+          const displayValue = profile[field.key]?.toString() || "N/A";
+          
+          // 5. Lógica condicional para renderizar o Select de Modalidade
+          if (field.key === 'modalidade' && isEditing && isMyProfile) {
+            return (
+              <div key={field.key}>
+                <Label className="capitalize">{field.label}:</Label>
+                <Select
+                  value={value}
+                  onValueChange={(newValue) => handleSelectChange(newValue, field.key)}
+                >
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="Selecione uma modalidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modalidadesList.map((mod: string) => (
+                      <SelectItem key={mod} value={mod}>
+                        {mod.charAt(0).toUpperCase() + mod.slice(1).toLowerCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          }
+
+          // Renderização padrão para os outros campos
+          return (
+            <div key={field.key.toString()}>
+              <Label className="capitalize">{field.label}:</Label>
+              {isEditing && isMyProfile ? (
+                field.isTextArea ? (
+                  <Textarea name={field.key.toString()} value={value} onChange={handleInputChange} className="mt-1" />
+                ) : (
+                  <Input type={field.inputType || "text"} name={field.key.toString()} value={value} onChange={handleInputChange} className="mt-1" />
+                )
+              ) : (
+                <p className="mt-1">
+                  {(field.inputType === "url" && displayValue !== "N/A") ? (
+                    <a href={displayValue} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      {displayValue}
+                    </a>
+                  ) : (
+                    displayValue
+                  )}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  if (loading) { return <div className="p-8 pt-6 text-center">Carregando perfil...</div>; }
+  if (error) { return <div className="p-8 pt-6 text-center text-red-500">{error}</div>; }
+  if (!profileData) { return <div className="p-8 pt-6 text-center">Nenhum dado de perfil encontrado.</div>; }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-lg">
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => navigate('/dashboard')}>← Voltar ao Dashboard</Button>
+          <h2 className="text-3xl font-bold tracking-tight">Perfil de {profileData.nome}</h2>
+        </div>
+        {isMyProfile && (
+          <div className="flex items-center space-x-2">
+            {isEditing ? (
+              <>
+                <Button onClick={handleSaveProfile}>Salvar</Button>
+                <Button variant="outline" onClick={() => setIsEditing(false)}>Cancelar</Button>
+              </>
+            ) : (
+              <Button onClick={() => setIsEditing(true)}>Editar</Button>
+            )}
+          </div>
+        )}
+      </div>
+      <Card>
         <CardHeader>
-          <CardTitle>Editar Perfil</CardTitle>
-          <CardDescription>
-            Atualize suas informações aqui.
-          </CardDescription>
+          <CardTitle>Detalhes do Perfil</CardTitle>
+          <CardDescription>Informações sobre o perfil de {profileData.nome}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-
-            {/* Campos específicos para Atleta */}
-            {user.userType === "athlete" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="sport">Modalidade Esportiva</Label>
-                  <Input
-                    id="sport"
-                    value={sport}
-                    onChange={(e) => setSport(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="height">Altura (ex: 1.80m)</Label>
-                  <Input
-                    id="height"
-                    value={height}
-                    onChange={(e) => setHeight(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Peso (ex: 75kg)</Label>
-                  <Input
-                    id="weight"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Campos específicos para Marca */}
-            {user.userType === "brand" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="marketTime">Tempo no Mercado (ex: 10 anos)</Label>
-                  <Input
-                    id="marketTime"
-                    value={marketTime}
-                    onChange={(e) => setMarketTime(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sponsoredAthletes">Número de Atletas Patrocinados</Label>
-                  <Input
-                    id="sponsoredAthletes"
-                    type="number"
-                    value={sponsoredAthletes}
-                    onChange={(e) => setSponsoredAthletes(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* ✅ NOVO CAMPO: Link do Midiakit (PDF) */}
-            <div className="space-y-2">
-              <Label htmlFor="midiakitUrl">Link do Midiakit (PDF)</Label>
-              <Input
-                id="midiakitUrl"
-                type="url" // Usar type="url" para validação básica de formato
-                placeholder="Ex: https://seusite.com/midiakit.pdf"
-                value={midiakitUrl}
-                onChange={(e) => setMidiakitUrl(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Insira um link direto para seu arquivo PDF de midiakit.
-              </p>
-            </div>
-
-            <Button type="submit" className="w-full">Salvar Perfil</Button>
-            <Button variant="outline" className="w-full mt-2" onClick={() => navigate("/dashboard")}>
-              Voltar ao Dashboard
-            </Button>
-          </form>
+          <ProfileFields
+            profile={profileData}
+            isEditing={isEditing}
+            isMyProfile={isMyProfile}
+            handleInputChange={handleInputChange}
+            handleSelectChange={handleSelectChange}
+            modalidadesList={modalidadesList}
+          />
         </CardContent>
       </Card>
     </div>
   );
-};
-
-export default Profile;
+}

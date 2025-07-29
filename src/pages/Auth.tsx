@@ -1,204 +1,313 @@
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useNavigate } from "react-router-dom";
-import { toast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
+import { useAuth } from "@/services/auth-context";
+import { auth, LoginRequest, RegisterRequest } from "@/services/apiService"; // Importar do novo apiService
+import { AxiosError } from "axios";
 
-const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState("");
+// Enums para melhorar a legibilidade e evitar "magic strings"
+enum AuthMode {
+  Login = "login",
+  Register = "register",
+}
+
+enum UserType {
+  Atleta = "ATLETA", // Backend espera em maiúsculas
+  Marca = "MARCA",
+  Admin = "ADMIN",
+}
+
+// Interface para tipagem do estado do formulário
+interface AuthFormData {
+  nome: string;
+  email: string;
+  senha: string;
+  tipoUsuario: UserType; // Usamos camelCase aqui para o estado interno
+  cidade: string;
+  estado: string;
+}
+
+// Interface para tratar o erro de resposta do Axios
+interface ErrorResponse {
+  message?: string;
+}
+
+// Estado inicial do formulário, usado para resetar
+const initialFormData: AuthFormData = {
+  nome: "",
+  email: "",
+  senha: "",
+  tipoUsuario: UserType.Atleta,
+  cidade: "",
+  estado: "",
+};
+
+export default function Auth() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [mode, setMode] = useState<AuthMode>(
+    (searchParams.get("mode") as AuthMode) || AuthMode.Login
+  );
+  const [formData, setFormData] = useState<AuthFormData>(initialFormData);
+  const [isLoading, setIsLoading] = useState(false); // Novo estado de carregamento
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const { login } = useAuth();
 
-    if (isLogin) {
-      // Lógica de Login
-      if (email && password) {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          // Verifica se o usuário existe e se a senha está "correta" (simulação)
-          // Em um backend real, você faria uma chamada à API para verificar credenciais e status de e-mail.
-          if (user.email === email && user.password === password) {
-            // **Verificação de Validação de E-mail no Login**
-            if (!user.emailValidated) {
-              toast({
-                title: "Confirmação de E-mail Necessária",
-                description: "Por favor, confirme seu e-mail antes de fazer login.",
-                variant: "destructive"
-              });
-              navigate("/confirm-email"); // Redireciona para a tela de confirmação
-              return;
-            }
+  useEffect(() => {
+    const newModeFromUrl = (searchParams.get("mode") as AuthMode) || AuthMode.Login;
 
-            // Login bem-sucedido
-            localStorage.setItem("user", JSON.stringify({
-              email,
-              userType: user.userType, // Mantém o tipo de usuário existente
-              name: user.name, // Mantém o nome existente
-              emailValidated: user.emailValidated // Mantém o status de validação
-            }));
-
-            toast({
-              title: "Login realizado com sucesso!",
-              description: "Bem-vindo ao AtletaHub",
-            });
-            navigate("/dashboard");
-          } else {
-            toast({
-              title: "Erro de Login",
-              description: "E-mail ou senha inválidos.",
-              variant: "destructive"
-            });
-          }
-        } else {
-            toast({
-                title: "Erro de Login",
-                description: "Usuário não encontrado. Por favor, cadastre-se.",
-                variant: "destructive"
-            });
-        }
-      } else {
-        toast({
-          title: "Erro de Login",
-          description: "Por favor, preencha e-mail e senha.",
-          variant: "destructive"
-        });
-      }
-    } else {
-      // Lógica de Cadastro
-      if (name && email && password && userType) {
-        // Validação de Frontend: Impedir cadastro como 'admin'
-        if (userType === "admin") {
-          toast({
-            title: "Erro no Cadastro",
-            description: "Não é possível cadastrar como administrador por aqui.",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        // Salva o usuário no localStorage com emailValidated: false
-        localStorage.setItem("user", JSON.stringify({
-          email,
-          userType,
-          name,
-          password, // Em um sistema real, a senha nunca seria salva no localStorage
-          emailValidated: false // O email ainda não foi validado
-        }));
-
-        toast({
-          title: "Cadastro realizado com sucesso!",
-          description: "Por favor, verifique seu e-mail para confirmar sua conta.",
-        });
-        navigate("/confirm-email"); // Redireciona para a tela de confirmação
-      } else {
-        toast({
-            title: "Erro no Cadastro",
-            description: "Por favor, preencha todos os campos para se cadastrar.",
-            variant: "destructive"
-        });
-      }
+    // Atualiza o modo e reseta o formulário apenas se o modo mudar
+    if (mode !== newModeFromUrl) {
+      setMode(newModeFromUrl);
+      setFormData(initialFormData); // Reseta todos os campos para um estado limpo
     }
-  };
+  }, [searchParams, mode]);
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    },
+    []
+  );
+
+  const handleSelectChange = useCallback((value: string) => {
+    setFormData((prev) => ({ ...prev, tipoUsuario: value as UserType }));
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsLoading(true); // Inicia o estado de carregamento
+
+      try {
+        if (mode === AuthMode.Register) {
+          // Validação client-side para o registro
+          if (
+            !formData.nome ||
+            !formData.email ||
+            !formData.senha ||
+            !formData.cidade ||
+            !formData.estado
+          ) {
+            toast({
+              title: "Erro de Validação",
+              description: "Por favor, preencha todos os campos obrigatórios.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(formData.email)) {
+            toast({
+              title: "Erro de Validação",
+              description: "Por favor, insira um endereço de e-mail válido.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          if (formData.senha.length < 6) {
+            toast({
+              title: "Erro de Validação",
+              description: "A senha deve ter pelo menos 6 caracteres.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const payload: RegisterRequest = { // Usando a interface de request
+            nome: formData.nome,
+            email: formData.email,
+            senha: formData.senha,
+            tipo_usuario: formData.tipoUsuario, // Usando snake_case para o backend
+            cidade: formData.cidade,
+            estado: formData.estado,
+          };
+          const response = await auth.register(payload); // Usando a função do apiService
+          toast({
+            title: "Sucesso",
+            description: response.data, // Backend retorna uma string de sucesso
+          });
+          navigate(`/auth?mode=${AuthMode.Login}`);
+        } else {
+          // Validação client-side para o login
+          if (!formData.email || !formData.senha) {
+            toast({
+              title: "Erro de Validação",
+              description: "Por favor, preencha seu e-mail e senha.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const payload: LoginRequest = { // Usando a interface de request
+            email: formData.email,
+            senha: formData.senha,
+          };
+          const response = await auth.login(payload); // Usando a função do apiService
+          login(response.data.token, response.data.user);
+          toast({
+            title: "Sucesso",
+            description: "Login realizado com sucesso!",
+          });
+          navigate("/dashboard");
+        }
+      } catch (err) {
+        const errorMessage =
+          (err as AxiosError<ErrorResponse>).response?.data?.message ||
+          "Ocorreu um erro. Por favor, tente novamente.";
+        toast({
+          title: "Erro",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false); // Finaliza o estado de carregamento
+      }
+    },
+    [mode, formData, navigate, login]
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">AtletaHub</h1>
-          <p className="text-white/80">Conectando atletas e marcas</p>
-        </div>
-
-        <Card className="shadow-elegant">
+    <div className="flex justify-center items-center h-screen bg-gray-100 dark:bg-gray-900">
+      <Card className="w-[400px]">
+        <form onSubmit={handleSubmit}>
           <CardHeader>
-            <CardTitle className="text-brand-primary">
-              {isLogin ? "Login" : "Cadastro"}
+            <CardTitle>
+              {mode === AuthMode.Login ? "Login" : "Cadastro"}
             </CardTitle>
-            <CardDescription className="text-brand-secondary/80">
-              {isLogin ? "Faça login em sua conta" : "Crie sua conta no AtletaHub"}
+            <CardDescription>
+              {mode === AuthMode.Login
+                ? "Entre para acessar sua conta."
+                : "Crie uma nova conta."}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <div>
-                  <Label htmlFor="name">Nome</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
+            <div className="grid w-full items-center gap-4">
+              {mode === AuthMode.Register && (
+                <>
+                  <div className="flex flex-col space-y-1.5">
+                    <Label htmlFor="nome">Nome</Label>
+                    <Input
+                      id="nome"
+                      name="nome"
+                      placeholder="Seu nome completo"
+                      value={formData.nome}
+                      onChange={handleInputChange}
+                      type="text"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <Label htmlFor="cidade">Cidade</Label>
+                    <Input
+                      id="cidade"
+                      name="cidade"
+                      placeholder="Sua cidade"
+                      value={formData.cidade}
+                      onChange={handleInputChange}
+                      type="text"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <Label htmlFor="estado">Estado</Label>
+                    <Input
+                      id="estado"
+                      name="estado"
+                      placeholder="Seu estado"
+                      value={formData.estado}
+                      onChange={handleInputChange}
+                      type="text"
+                    />
+                  </div>
+                </>
               )}
-
-              <div>
-                <Label htmlFor="email">E-mail</Label>
+              <div className="flex flex-col space-y-1.5">
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  placeholder="Seu endereço de e-mail"
+                  value={formData.email}
+                  onChange={handleInputChange}
                 />
               </div>
-
-              <div>
-                <Label htmlFor="password">Senha</Label>
+              <div className="flex flex-col space-y-1.5">
+                <Label htmlFor="senha">Senha</Label>
                 <Input
-                  id="password"
+                  id="senha"
+                  name="senha"
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
+                  placeholder="Sua senha"
+                  value={formData.senha}
+                  onChange={handleInputChange}
                 />
               </div>
-
-              {!isLogin && (
-                <div>
-                  <Label htmlFor="userType">Tipo de usuário</Label>
-                  <Select value={userType} onValueChange={setUserType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
+              {mode === AuthMode.Register && (
+                <div className="flex flex-col space-y-1.5">
+                  <Label htmlFor="tipoUsuario">Tipo de Usuário</Label>
+                  <Select
+                    onValueChange={handleSelectChange}
+                    defaultValue={formData.tipoUsuario}
+                    value={formData.tipoUsuario}
+                  >
+                    <SelectTrigger id="tipoUsuario">
+                      <SelectValue placeholder="Selecione o tipo de usuário" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="athlete">Atleta</SelectItem>
-                      <SelectItem value="brand">Marca</SelectItem>
+                      <SelectItem value={UserType.Atleta}>Atleta</SelectItem>
+                      <SelectItem value={UserType.Marca}>Marca</SelectItem>
+                      <SelectItem value={UserType.Admin}>Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
-
-              <Button type="submit" className="w-full" variant="hero">
-                {isLogin ? "Entrar" : "Cadastrar"}
-              </Button>
-            </form>
-
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-brand-accent hover:underline"
-              >
-                {isLogin
-                  ? "Não tem conta? Cadastre-se"
-                  : "Já tem conta? Faça login"}
-              </button>
             </div>
           </CardContent>
-        </Card>
-      </div>
+          <CardFooter className="flex flex-col">
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading
+                ? "Carregando..."
+                : mode === AuthMode.Login
+                ? "Entrar"
+                : "Cadastrar"}
+            </Button>
+            <div className="mt-4 text-center text-sm">
+              {mode === AuthMode.Login
+                ? "Ainda não tem uma conta?"
+                : "Já tem uma conta?"}{" "}
+              <Link
+                to={`/auth?mode=${
+                  mode === AuthMode.Login ? AuthMode.Register : AuthMode.Login
+                }`}
+                className="underline"
+              >
+                {mode === AuthMode.Login ? "Cadastre-se" : "Entrar"}
+              </Link>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
-};
-
-export default Auth;
+}
