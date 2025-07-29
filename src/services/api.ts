@@ -1,8 +1,12 @@
 import axios, { AxiosError } from 'axios';
 
-// CORREÇÃO: Define a URL base da API usando import.meta.env para o Vite.
-// Certifique-se de que a variável no Vercel (e localmente para desenvolvimento) seja VITE_API_BASE_URL.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error("❌ A variável VITE_API_URL não está definida!");
+}
+
 
 
 const api = axios.create({
