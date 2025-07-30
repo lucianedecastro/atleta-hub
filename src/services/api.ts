@@ -2,6 +2,7 @@ import axios, { AxiosError } from 'axios';
 
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
+console.log('API_BASE_URL atual no frontend:', API_BASE_URL);
 
 if (!API_BASE_URL) {
   throw new Error("❌ A variável VITE_API_URL não está definida!");
