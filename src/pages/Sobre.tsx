@@ -21,6 +21,20 @@ const Sobre = () => {
         conectando atletas e marcas de forma transparente, eficiente e inteligente.
       </p>
 
+      {/* ODSs da Agenda 2030 */}
+      <h2 className="text-2xl font-semibold mb-6">Contribuição para os Objetivos de Desenvolvimento Sustentável (ODS)</h2>
+      <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
+        O <strong>AtletaHub</strong> aborda diretamente três Objetivos de Desenvolvimento Sustentável (ODS) da Agenda 2030 da ONU:
+        <br /><br />
+        • <strong>ODS 9 (Indústria, Inovação e Infraestrutura)</strong>: Ao oferecer uma infraestrutura digital inovadora para atletas amadores, o AtletaHub representa uma solução tecnológica que moderniza o acesso a oportunidades e recursos no esporte.
+        <br /><br />
+        • <strong>ODS 8 (Trabalho Decente e Crescimento Econômico)</strong>: A plataforma estimula a profissionalização e geração de renda no esporte amador, ao facilitar a conexão entre atletas e marcas patrocinadoras.
+        <br /><br />
+        • <strong>ODS 10 (Redução das Desigualdades)</strong>: Democratiza o acesso a patrocínios, superando barreiras financeiras e geográficas, promovendo inclusão e equidade no esporte, especialmente em regiões menos favorecidas como Ubatuba, SP, onde o projeto foi iniciado.
+        <br /><br />
+        Em resumo, o <strong>AtletaHub</strong> é uma aplicação prática de engenharia de software com impacto social positivo, alinhada aos princípios da Agenda 2030.
+      </p>
+
       <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
         A iniciativa busca mitigar a escassez de recursos que limita o desenvolvimento esportivo no país,
         democratizando o acesso a oportunidades e valorizando talentos que, muitas vezes, não têm visibilidade.
