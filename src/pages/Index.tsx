@@ -74,8 +74,8 @@ const Index = () => {
         </div>
 
         <header className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center container mx-auto">
-          <Link to="/" className="font-bold text-xl text-white" aria-label="AtletaHub - Página inicial">
-            AtletaHub
+          <Link to="/sobre" className="font-bold text-xl text-white" aria-label="Sobre o AtletaHub - Informações sobre a aplicação">
+            Sobre o AtletaHub
           </Link>
           <nav aria-label="Navegação Principal">
             <ul className="flex space-x-4">

@@ -5,6 +5,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
+import Sobre from "./pages/Sobre"; // ✅ NOVO IMPORT
 import { AuthProvider } from "./services/auth-context";
 import "./App.css";
 import { Toaster } from "./components/ui/toaster";
@@ -12,11 +13,11 @@ import { Toaster } from "./components/ui/toaster";
 function App() {
   return (
     <BrowserRouter>
-      {/* Usando a sintaxe curta de fragmento para agrupar */}
       <>
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/sobre" element={<Sobre />} /> {/* ✅ NOVA ROTA */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile/:id" element={<Profile />} />
