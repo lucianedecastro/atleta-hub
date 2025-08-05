@@ -18,39 +18,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/services/auth-context";
-import { auth, LoginRequest, RegisterRequest } from "@/services/apiService"; 
+import { auth, LoginRequest, RegisterRequest } from "@/services/apiService";
 import { AxiosError } from "axios";
 
-// Enums para melhorar a legibilidade e evitar "magic strings"
 enum AuthMode {
   Login = "login",
   Register = "register",
 }
 
 enum UserType {
-  Atleta = "ATLETA", // Backend espera em maiúsculas
+  Atleta = "ATLETA",
   Marca = "MARCA",
   Admin = "ADMIN",
 }
 
-// Interface para tipagem do estado do formulário
 interface AuthFormData {
   nome: string;
   email: string;
   senha: string;
-  tipoUsuario: UserType; // Usamos camelCase aqui para o estado interno
+  tipoUsuario: UserType;
   cidade: string;
   estado: string;
 }
 
-// Interface para tratar o erro de resposta do Axios
 interface ErrorResponse {
   message?: string;
 }
 
-// Estado inicial do formulário, usado para resetar
 const initialFormData: AuthFormData = {
   nome: "",
   email: "",
@@ -67,17 +64,17 @@ export default function Auth() {
     (searchParams.get("mode") as AuthMode) || AuthMode.Login
   );
   const [formData, setFormData] = useState<AuthFormData>(initialFormData);
-  const [isLoading, setIsLoading] = useState(false); // Novo estado de carregamento
+  const [isLoading, setIsLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const { login } = useAuth();
 
   useEffect(() => {
     const newModeFromUrl = (searchParams.get("mode") as AuthMode) || AuthMode.Login;
-
-    // Atualiza o modo e reseta o formulário apenas se o modo mudar
     if (mode !== newModeFromUrl) {
       setMode(newModeFromUrl);
-      setFormData(initialFormData); // Reseta todos os campos para um estado limpo
+      setFormData(initialFormData);
+      setAcceptedTerms(false);
     }
   }, [searchParams, mode]);
 
@@ -96,11 +93,10 @@ export default function Auth() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      setIsLoading(true); // Inicia o estado de carregamento
+      setIsLoading(true);
 
       try {
         if (mode === AuthMode.Register) {
-          // Validação client-side para o registro
           if (
             !formData.nome ||
             !formData.email ||
@@ -135,22 +131,30 @@ export default function Auth() {
             return;
           }
 
-          const payload: RegisterRequest = { // Usando a interface de request
+          if (!acceptedTerms) {
+            toast({
+              title: "Termos de Uso",
+              description: "Você precisa aceitar os termos de uso e política de privacidade para continuar.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const payload: RegisterRequest = {
             nome: formData.nome,
             email: formData.email,
             senha: formData.senha,
-            tipo_usuario: formData.tipoUsuario, // Usando snake_case para o backend
+            tipo_usuario: formData.tipoUsuario,
             cidade: formData.cidade,
             estado: formData.estado,
           };
-          const response = await auth.register(payload); // Usando a função do apiService
+          const response = await auth.register(payload);
           toast({
             title: "Sucesso",
-            description: response.data, // Backend retorna uma string de sucesso
+            description: response.data,
           });
           navigate(`/auth?mode=${AuthMode.Login}`);
         } else {
-          // Validação client-side para o login
           if (!formData.email || !formData.senha) {
             toast({
               title: "Erro de Validação",
@@ -160,11 +164,11 @@ export default function Auth() {
             return;
           }
 
-          const payload: LoginRequest = { // Usando a interface de request
+          const payload: LoginRequest = {
             email: formData.email,
             senha: formData.senha,
           };
-          const response = await auth.login(payload); // Usando a função do apiService
+          const response = await auth.login(payload);
           login(response.data.token, response.data.user);
           toast({
             title: "Sucesso",
@@ -182,10 +186,10 @@ export default function Auth() {
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false); // Finaliza o estado de carregamento
+        setIsLoading(false);
       }
     },
-    [mode, formData, navigate, login]
+    [mode, formData, navigate, login, acceptedTerms]
   );
 
   return (
@@ -264,23 +268,44 @@ export default function Auth() {
                 />
               </div>
               {mode === AuthMode.Register && (
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="tipoUsuario">Tipo de Usuário</Label>
-                  <Select
-                    onValueChange={handleSelectChange}
-                    defaultValue={formData.tipoUsuario}
-                    value={formData.tipoUsuario}
-                  >
-                    <SelectTrigger id="tipoUsuario">
-                      <SelectValue placeholder="Selecione o tipo de usuário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={UserType.Atleta}>Atleta</SelectItem>
-                      <SelectItem value={UserType.Marca}>Marca</SelectItem>
-                      <SelectItem value={UserType.Admin}>Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <>
+                  <div className="flex flex-col space-y-1.5">
+                    <Label htmlFor="tipoUsuario">Tipo de Usuário</Label>
+                    <Select
+                      onValueChange={handleSelectChange}
+                      defaultValue={formData.tipoUsuario}
+                      value={formData.tipoUsuario}
+                    >
+                      <SelectTrigger id="tipoUsuario">
+                        <SelectValue placeholder="Selecione o tipo de usuário" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={UserType.Atleta}>Atleta</SelectItem>
+                        <SelectItem value={UserType.Marca}>Marca</SelectItem>
+                        <SelectItem value={UserType.Admin}>Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-start space-x-2 text-sm mt-2">
+                    <Checkbox
+                      id="terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(value) => setAcceptedTerms(!!value)}
+                    />
+                    <Label htmlFor="terms" className="text-muted-foreground">
+                      Eu li e concordo com os {" "}
+                      <Link to="/termos" target="_blank" className="underline text-primary">
+                        Termos de Uso
+                      </Link>{" "}
+                      e a {" "}
+                      <Link to="/privacidade" target="_blank" className="underline text-primary">
+                        Política de Privacidade
+                      </Link>
+                      .
+                    </Label>
+                  </div>
+                </>
               )}
             </div>
           </CardContent>
@@ -295,7 +320,7 @@ export default function Auth() {
             <div className="mt-4 text-center text-sm">
               {mode === AuthMode.Login
                 ? "Ainda não tem uma conta?"
-                : "Já tem uma conta?"}{" "}
+                : "Já tem uma conta?"} {" "}
               <Link
                 to={`/auth?mode=${
                   mode === AuthMode.Login ? AuthMode.Register : AuthMode.Login

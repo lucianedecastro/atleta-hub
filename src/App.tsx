@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Termos from "@/pages/Termos";
+import Privacidade from "@/pages/Privacidade";
 import Profile from "./pages/Profile";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
@@ -19,6 +21,8 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/sobre" element={<Sobre />} /> {/* ✅ NOVA ROTA */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/termos" element={<Termos />} />
+            <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/chat/:matchId" element={<Chat />} />
