@@ -17,7 +17,6 @@ import heroImage from "@/assets/hero-image.jpg";
 
 import { Footer } from "@/components/Footer";
 
-// Dados estáticos definidos fora do componente para evitar recriação em cada re-renderização
 const featuresData = [
   {
     id: "match-system",
@@ -53,8 +52,8 @@ const testimonialsData = [
     text: "Consegui patrocínio através do AtletaHub! O sistema de match é incrível."
   },
   {
-    id: "nike-brasil",
-    name: "Nike Brasil",
+    id: "marca-patrocinadora",
+    name: "Marca Patrocinadora",
     role: "Marca Esportiva",
     text: "Encontramos atletas perfeitos para nossa campanha. Recomendo!"
   }
@@ -62,10 +61,10 @@ const testimonialsData = [
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="relative bg-gradient-hero text-white h-screen overflow-hidden flex flex-col">
-        <div className="absolute inset-0">
+      <section className="relative bg-gradient-hero text-white flex flex-col overflow-hidden">
+        <div className="absolute inset-0 z-0">
           <img
             src={heroImage}
             alt="Atletas e marcas se conectando no AtletaHub"
@@ -98,7 +97,7 @@ const Index = () => {
           </nav>
         </header>
 
-        <div className="container mx-auto text-center px-4 relative z-10 flex flex-col justify-center items-center flex-grow pt-20 pb-10">
+        <div className="container mx-auto text-center px-4 relative z-10 flex flex-col justify-center items-center pt-32 pb-20">
           <h1 className="text-6xl font-bold mb-6">AtletaHub</h1>
           <p className="text-2xl mb-8 max-w-2xl mx-auto">
             A plataforma que conecta atletas e marcas através de um sistema inteligente de match
@@ -157,29 +156,25 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="bg-primary text-primary-foreground w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4" aria-hidden="true">
-                1
+            {["Cadastre-se", "Explore", "Conecte-se"].map((step, index) => (
+              <div key={index} className="text-center">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 ${
+                  index === 0 ? "bg-primary text-primary-foreground"
+                  : index === 1 ? "bg-accent text-accent-foreground"
+                  : "bg-match text-match-foreground"
+                }`}>
+                  {index + 1}
+                </div>
+                <h3 className="text-xl font-semibold mb-2">{step}</h3>
+                <p className="text-muted-foreground">
+                  {index === 0
+                    ? "Crie seu perfil como atleta ou marca"
+                    : index === 1
+                    ? "Veja perfis e demonstre interesse"
+                    : "Converse apenas com matches confirmados"}
+                </p>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Cadastre-se</h3>
-              <p className="text-muted-foreground">Crie seu perfil como atleta ou marca</p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-accent text-accent-foreground w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4" aria-hidden="true">
-                2
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Explore</h3>
-              <p className="text-muted-foreground">Veja perfis e demonstre interesse</p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-match text-match-foreground w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4" aria-hidden="true">
-                3
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Conecte-se</h3>
-              <p className="text-muted-foreground">Converse apenas com matches confirmados</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>

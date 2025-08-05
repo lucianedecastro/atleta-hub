@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ✅ Correção essencial para altura e rolagem correta do layout */
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
 */
@@ -27,7 +36,7 @@ All colors MUST be HSL.
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 268 83% 58%; /* Um roxo/magenta */
+    --accent: 268 83% 58%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
@@ -37,15 +46,15 @@ All colors MUST be HSL.
     --input: 214.3 31.8% 91.4%;
     --ring: 16 100% 66%;
 
-    --match: 348 83% 47%; /* Vermelho mais forte para match */
+    --match: 348 83% 47%;
     --match-foreground: 0 0% 100%;
 
     /* ✅ NOVAS CORES ADICIONADAS */
-    --info: 215 90.0% 43.5%; /* Um azul para "Recebeu Interesse!" */
-    --info-foreground: 210 40% 98%; /* Texto claro para contraste */
+    --info: 215 90.0% 43.5%;
+    --info-foreground: 210 40% 98%;
 
-    --interested: 142.1 76.2% 36.3%; /* Um verde para "Interessado" */
-    --interested-foreground: 210 40% 98%; /* Texto claro para contraste */
+    --interested: 142.1 76.2% 36.3%;
+    --interested-foreground: 210 40% 98%;
 
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
     --gradient-hero: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
@@ -103,11 +112,11 @@ All colors MUST be HSL.
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* ✅ NOVAS CORES ADICIONADAS PARA DARK MODE */
-    --info: 215 90.0% 43.5%; /* Você pode manter o mesmo azul ou ajustar para um tom diferente no dark mode */
+    /* ✅ DARK MODE - cores adicionais */
+    --info: 215 90.0% 43.5%;
     --info-foreground: 210 40% 98%;
 
-    --interested: 142.1 76.2% 36.3%; /* Pode manter o mesmo verde ou ajustar para um tom diferente no dark mode */
+    --interested: 142.1 76.2% 36.3%;
     --interested-foreground: 210 40% 98%;
   }
 }
