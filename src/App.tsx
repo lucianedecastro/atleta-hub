@@ -7,7 +7,7 @@ import Privacidade from "@/pages/Privacidade";
 import Profile from "./pages/Profile";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
-import Sobre from "./pages/Sobre"; // ✅ NOVO IMPORT
+import Sobre from "./pages/Sobre"; 
 import { AuthProvider } from "./services/auth-context";
 import "./App.css";
 import { Toaster } from "./components/ui/toaster";
