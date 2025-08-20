@@ -294,11 +294,11 @@ export default function Auth() {
                       onCheckedChange={(value) => setAcceptedTerms(!!value)}
                     />
                     <Label htmlFor="terms" className="text-muted-foreground">
-                      Eu li e concordo com os {" "}
+                      Eu li e concordo com os{" "}
                       <Link to="/termos" target="_blank" className="underline text-primary">
                         Termos de Uso
                       </Link>{" "}
-                      e a {" "}
+                      e a{" "}
                       <Link to="/privacidade" target="_blank" className="underline text-primary">
                         Política de Privacidade
                       </Link>
@@ -320,7 +320,7 @@ export default function Auth() {
             <div className="mt-4 text-center text-sm">
               {mode === AuthMode.Login
                 ? "Ainda não tem uma conta?"
-                : "Já tem uma conta?"} {" "}
+                : "Já tem uma conta?"}{" "}
               <Link
                 to={`/auth?mode=${
                   mode === AuthMode.Login ? AuthMode.Register : AuthMode.Login
@@ -328,6 +328,13 @@ export default function Auth() {
                 className="underline"
               >
                 {mode === AuthMode.Login ? "Cadastre-se" : "Entrar"}
+              </Link>
+            </div>
+
+            {/* Botão de retorno para a Página Inicial */}
+            <div className="mt-4 text-center">
+              <Link to="/" className="text-sm underline">
+                ← Voltar para a Página Inicial
               </Link>
             </div>
           </CardFooter>
