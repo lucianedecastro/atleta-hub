@@ -16,7 +16,7 @@ export function Footer() {
         <div className="mb-4 md:mb-0">
           <p className="text-sm">
             &copy; {currentYear} AtletaHub. Todos os direitos reservados. <br />
-            Programa de computador registrado no INPI sob nº {inpiNumber}.
+            Software AtletaHub - Registrado no INPI sob o nº {inpiNumber}.
           </p>
         </div>
 
