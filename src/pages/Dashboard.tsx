@@ -85,8 +85,8 @@ export default function Dashboard() {
     if (!userData) return;
     try {
       const payload: InteresseRequest = {
-        id_destino: targetProfileId,
-        tipo_interesse: TipoInteresse.CURTIR,
+        idDestino: targetProfileId,
+        tipoInteresse: TipoInteresse.CURTIR,
       };
       await interests.sendInterest(payload);
       toast({
@@ -151,7 +151,7 @@ export default function Dashboard() {
                       to={`/chat/${match.id}`}
                       className="text-primary hover:underline"
                     >
-                      {match.nome_outro_usuario}
+                      {match.nomeOutroUsuario}
                     </Link>
                   </li>
                 ))}
@@ -169,10 +169,10 @@ export default function Dashboard() {
             <Card key={profile.id}>
               <CardHeader>
                 <CardTitle>{profile.nome}</CardTitle>
-                <CardDescription>{profile.tipo_usuario}</CardDescription>
+                <CardDescription>{profile.tipoUsuario}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                {profile.tipo_usuario === UserType.ATLETA ? (
+                {profile.tipoUsuario === UserType.ATLETA ? (
                   <>
                     <div className="flex items-center space-x-4">
                       <Label className="font-semibold text-sm">Modalidade:</Label>
@@ -191,7 +191,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center space-x-4">
                       <Label className="font-semibold text-sm">Tempo de Mercado:</Label>
-                      <span className="text-muted-foreground text-sm">{profile.tempo_mercado || "N/A"}</span>
+                      <span className="text-muted-foreground text-sm">{profile.tempoMercado || "N/A"}</span>
                     </div>
                   </>
                 )}

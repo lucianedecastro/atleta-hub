@@ -21,7 +21,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/services/auth-context";
-import { auth, LoginRequest, RegisterRequest } from "@/services/apiService";
+import { auth, LoginRequest } from "@/services/apiService"; // Removi RegisterRequest da importação para evitar conflito de tipo temporário
 import { AxiosError } from "axios";
 
 enum AuthMode {
@@ -97,6 +97,7 @@ export default function Auth() {
 
       try {
         if (mode === AuthMode.Register) {
+          // --- VALIDAÇÕES DE REGISTRO ---
           if (
             !formData.nome ||
             !formData.email ||
@@ -140,21 +141,30 @@ export default function Auth() {
             return;
           }
 
-          const payload: RegisterRequest = {
+          // --- CORREÇÃO DO PAYLOAD PARA O SPRING BOOT ---
+          // Usamos 'any' aqui para garantir que enviamos 'tipoUsuario' (camelCase)
+          // sem que o TypeScript reclame se a interface antiga ainda estiver com snake_case.
+          const payload: any = {
             nome: formData.nome,
             email: formData.email,
             senha: formData.senha,
-            tipo_usuario: formData.tipoUsuario,
+            tipoUsuario: formData.tipoUsuario, // Ajustado para padrão Java (camelCase)
             cidade: formData.cidade,
             estado: formData.estado,
           };
+
           const response = await auth.register(payload);
+          
           toast({
-            title: "Sucesso",
-            description: response.data,
+            title: "Conta criada com sucesso!",
+            description: "Faça login para completar seu perfil.", // Mensagem mais amigável
           });
+          
+          // Redireciona para o login após cadastro
           navigate(`/auth?mode=${AuthMode.Login}`);
+
         } else {
+          // --- LÓGICA DE LOGIN ---
           if (!formData.email || !formData.senha) {
             toast({
               title: "Erro de Validação",
@@ -168,18 +178,25 @@ export default function Auth() {
             email: formData.email,
             senha: formData.senha,
           };
+          
           const response = await auth.login(payload);
+          
+          // Login no contexto da aplicação
           login(response.data.token, response.data.user);
+          
           toast({
             title: "Sucesso",
             description: "Login realizado com sucesso!",
           });
+          
+          // Redireciona para o dashboard
           navigate("/dashboard");
         }
       } catch (err) {
         const errorMessage =
           (err as AxiosError<ErrorResponse>).response?.data?.message ||
           "Ocorreu um erro. Por favor, tente novamente.";
+        
         toast({
           title: "Erro",
           description: errorMessage,

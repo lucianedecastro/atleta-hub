@@ -1,10 +1,8 @@
 import axios, { AxiosError } from 'axios';
 
-
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 console.log('API_BASE_URL atual no frontend:', API_BASE_URL);
-
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -16,9 +14,9 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
 
-    // Usa a API do AxiosHeaders se disponível
-    if (token && typeof config.headers?.set === "function") {
-      config.headers.set("Authorization", `Bearer ${token}`);
+    // Adiciona o token de forma segura
+    if (token && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
 
     return config;
@@ -38,12 +36,12 @@ api.interceptors.response.use(
       const { status } = error.response;
 
       if (status === 401 || status === 403) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user'); // Limpa também os dados do usuário
-        console.warn('Sessão expirada ou acesso negado. Redirecionando para a página de login.');
-
-        if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
-          window.location.href = '/auth?mode=login';
+        // Evita loop de redirecionamento se já estiver na tela de auth
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user'); 
+            console.warn('Sessão expirada ou acesso negado. Redirecionando para login.');
+            window.location.href = '/auth?mode=login';
         }
       }
     }
@@ -52,9 +50,9 @@ api.interceptors.response.use(
   }
 );
 
-export default api; // Exporta a instância do Axios configurada
+export default api; 
 
-// --- Interfaces para DTOs (adaptadas para snake_case do backend) ---
+// --- Interfaces para DTOs (Adaptadas para camelCase do Java Spring Boot) ---
 
 // Auth DTOs
 export interface LoginRequest {
@@ -76,7 +74,7 @@ export interface RegisterRequest {
   nome: string;
   email: string;
   senha: string;
-  tipo_usuario: 'ATLETA' | 'MARCA' | 'ADMIN';
+  tipoUsuario: 'ATLETA' | 'MARCA' | 'ADMIN'; // Ajustado para camelCase
   cidade: string;
   estado: string;
 }
@@ -86,23 +84,23 @@ export interface UserDetailsResponse {
   id: number;
   nome: string;
   email: string;
-  tipo_usuario: 'ATLETA' | 'MARCA' | 'ADMIN';
+  tipoUsuario: 'ATLETA' | 'MARCA' | 'ADMIN'; // Ajustado
   idade: number | null;
   modalidade: string | null;
-  competicoes_titulos: string | null;
-  redes_social: string | null;
+  competicoesTitulos: string | null; // Ajustado (era competicoes_titulos)
+  redesSocial: string | null;        // Ajustado
   historico: string | null;
   produto: string | null;
-  tempo_mercado: number | null;
-  atletas_patrocinados: string | null;
-  tipo_investimento: string | null;
+  tempoMercado: number | null;       // Ajustado
+  atletasPatrocinados: string | null;// Ajustado
+  tipoInvestimento: string | null;   // Ajustado
   altura?: number | null;
   peso?: number | null;
   posicao?: string | null;
   observacoes?: string | null;
-  data_nascimento?: string | null;
-  telefone_contato?: string | null;
-  midiakit_url?: string | null;
+  dataNascimento?: string | null;    // Ajustado
+  telefoneContato?: string | null;   // Ajustado
+  midiakitUrl?: string | null;       // Ajustado
 }
 
 // Profile Update DTOs
@@ -113,22 +111,22 @@ export interface UpdateAtletaProfileRequest {
   altura?: number | null;
   peso?: number | null;
   modalidade?: string | null;
-  competicoes_titulos?: string | null;
-  redes_social?: string | null;
+  competicoesTitulos?: string | null; // Ajustado
+  redesSocial?: string | null;        // Ajustado
   historico?: string | null;
   posicao?: string | null;
   observacoes?: string | null;
-  data_nascimento?: string | null;
-  telefone_contato?: string | null;
-  midiakit_url?: string | null;
+  dataNascimento?: string | null;     // Ajustado
+  telefoneContato?: string | null;    // Ajustado
+  midiakitUrl?: string | null;        // Ajustado
 }
 
 export interface UpdateMarcaProfileRequest {
   produto?: string | null;
-  tempo_mercado?: number | null;
-  atletas_patrocinados?: string | null;
-  tipo_investimento?: string | null;
-  redes_social?: string | null;
+  tempoMercado?: number | null;       // Ajustado
+  atletasPatrocinados?: string | null;// Ajustado
+  tipoInvestimento?: string | null;   // Ajustado
+  redesSocial?: string | null;        // Ajustado
 }
 
 // Interesse DTOs
@@ -138,43 +136,43 @@ export enum TipoInteresse {
 }
 
 export interface InteresseRequest {
-  id_destino: number;
-  tipo_interesse: TipoInteresse;
+  idDestino: number;       // Ajustado (era id_destino)
+  tipoInteresse: TipoInteresse; // Ajustado (era tipo_interesse)
 }
 
 export interface InteresseResponse {
   id: number;
-  id_origem: number;
-  id_destino: number;
-  tipo_interesse: TipoInteresse;
-  data_envio: string;
+  idOrigem: number;        // Ajustado
+  idDestino: number;       // Ajustado
+  tipoInteresse: TipoInteresse; // Ajustado
+  dataEnvio: string;       // Ajustado
 }
 
 // Match DTOs
 export interface MatchResponse {
   id: number;
-  id_usuario_a: number;
-  id_usuario_b: number;
-  nome_usuario_a: string;
-  nome_usuario_b: string;
-  nome_outro_usuario: string;
-  tipo_match: 'RECIPROCO' | 'SUPER_MATCH';
-  data_match: string;
+  idUsuarioA: number;      // Ajustado
+  idUsuarioB: number;      // Ajustado
+  nomeUsuarioA: string;    // Ajustado
+  nomeUsuarioB: string;    // Ajustado
+  nomeOutroUsuario: string;// Ajustado
+  tipoMatch: 'RECIPROCO' | 'SUPER_MATCH'; // Ajustado
+  dataMatch: string;       // Ajustado
 }
 
 // Message DTOs
 export interface SendMessageRequest {
-  id_match: number;
-  id_remetente: number;
+  idMatch: number;     // Ajustado
+  idRemetente: number; // Ajustado
   texto: string;
 }
 
 export interface MessageResponse {
   id: number;
-  id_match: number;
-  id_remetente: number;
+  idMatch: number;     // Ajustado
+  idRemetente: number; // Ajustado
   texto: string;
-  data_envio: string;
+  dataEnvio: string;   // Ajustado
 }
 
 
@@ -182,11 +180,13 @@ export interface MessageResponse {
 
 const auth = {
   login: (data: LoginRequest) => api.post<LoginResponse>('/auth/login', data),
-  register: (data: RegisterRequest) => api.post<string>('/auth/registrar', data),
+  // Atualizado para /register (padrão inglês usado em Spring Boot)
+  register: (data: RegisterRequest) => api.post<string>('/auth/register', data),
 };
 
 const users = {
   getAll: () => api.get<UserDetailsResponse[]>('/usuarios'),
+  // Query param também ajustado para camelCase se o backend esperar (request param)
   getByType: (userType: string) => api.get<UserDetailsResponse[]>(`/usuarios/tipo?tipoUsuario=${userType}`),
   getById: (id: number) => api.get<UserDetailsResponse>(`/usuarios/${id}`),
 };
@@ -213,12 +213,8 @@ const messages = {
   getByMatchId: (matchId: number) => api.get<MessageResponse[]>(`/mensagens/match/${matchId}`),
 };
 
-// ***** NOVO MÓDULO DE API ADICIONADO AQUI *****
 const modalidades = {
-  // O backend retornará uma lista de strings com os nomes dos enums
   getAll: () => api.get<string[]>('/modalidades'),
 };
 
-// Exporta um objeto contendo todos os módulos de API
-// Adiciona o novo módulo 'modalidades' à exportação
 export { auth, users, profile, interests, matches, messages, modalidades };
