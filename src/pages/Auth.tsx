@@ -24,6 +24,7 @@ import { useAuth } from "@/services/auth-context";
 import { auth, LoginRequest } from "@/services/apiService";
 import { AxiosError } from "axios";
 
+
 enum AuthMode {
   Login = "login",
   Register = "register",
@@ -100,7 +101,6 @@ export default function Auth() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      setIsLoading(true);
 
       try {
         if (mode === AuthMode.Register) {
@@ -130,6 +130,8 @@ export default function Auth() {
             return;
           }
 
+          setIsLoading(true);
+
           const payload = {
             nome: formData.nome,
             email: formData.email,
@@ -156,6 +158,8 @@ export default function Auth() {
             });
             return;
           }
+
+          setIsLoading(true);
 
           const payload: LoginRequest = {
             email: formData.email,
