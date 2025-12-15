@@ -44,6 +44,10 @@ interface AuthFormData {
   estado: string;
 }
 
+interface ErrorResponse {
+  message?: string;
+}
+
 const initialFormData: AuthFormData = {
   nome: "",
   email: "",
@@ -56,9 +60,11 @@ const initialFormData: AuthFormData = {
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
   const [mode, setMode] = useState<AuthMode>(
     (searchParams.get("mode") as AuthMode) || AuthMode.Login
   );
+
   const [formData, setFormData] = useState<AuthFormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -66,10 +72,11 @@ export default function Auth() {
   const { login } = useAuth();
 
   useEffect(() => {
-    const newModeFromUrl =
+    const newMode =
       (searchParams.get("mode") as AuthMode) || AuthMode.Login;
-    if (mode !== newModeFromUrl) {
-      setMode(newModeFromUrl);
+
+    if (newMode !== mode) {
+      setMode(newMode);
       setFormData(initialFormData);
       setAcceptedTerms(false);
     }
@@ -84,7 +91,10 @@ export default function Auth() {
   );
 
   const handleSelectChange = useCallback((value: string) => {
-    setFormData((prev) => ({ ...prev, tipoUsuario: value as UserType }));
+    setFormData((prev) => ({
+      ...prev,
+      tipoUsuario: value as UserType,
+    }));
   }, []);
 
   const handleSubmit = useCallback(
@@ -94,6 +104,7 @@ export default function Auth() {
 
       try {
         if (mode === AuthMode.Register) {
+          // 🔒 Validações obrigatórias
           if (
             !formData.nome ||
             !formData.email ||
@@ -102,8 +113,8 @@ export default function Auth() {
             !formData.estado
           ) {
             toast({
-              title: "Erro de Validação",
-              description: "Por favor, preencha todos os campos obrigatórios.",
+              title: "Erro de validação",
+              description: "Preencha todos os campos obrigatórios.",
               variant: "destructive",
             });
             return;
@@ -111,15 +122,15 @@ export default function Auth() {
 
           if (!acceptedTerms) {
             toast({
-              title: "Termos de Uso",
+              title: "Consentimento obrigatório",
               description:
-                "Você precisa aceitar os termos de uso e política de privacidade.",
+                "Você precisa concordar com o uso dos seus dados para continuar.",
               variant: "destructive",
             });
             return;
           }
 
-          const payload: any = {
+          const payload = {
             nome: formData.nome,
             email: formData.email,
             senha: formData.senha,
@@ -131,16 +142,16 @@ export default function Auth() {
           await auth.register(payload);
 
           toast({
-            title: "Conta criada com sucesso!",
-            description: "Faça login para completar seu perfil.",
+            title: "Cadastro realizado!",
+            description: "Agora você pode fazer login.",
           });
 
           navigate(`/auth?mode=${AuthMode.Login}`);
         } else {
           if (!formData.email || !formData.senha) {
             toast({
-              title: "Erro de Validação",
-              description: "Por favor, preencha seu e-mail e senha.",
+              title: "Erro de validação",
+              description: "Informe email e senha.",
               variant: "destructive",
             });
             return;
@@ -155,30 +166,26 @@ export default function Auth() {
           login(response.data.token, response.data.user);
 
           toast({
-            title: "Sucesso",
-            description: "Login realizado com sucesso!",
+            title: "Login realizado com sucesso!",
           });
 
           navigate("/dashboard");
         }
       } catch (err) {
-        const axiosError = err as AxiosError<any>;
-        const errorMessage =
-          axiosError.response?.data?.message ||
-          axiosError.response?.data?.error ||
-          axiosError.response?.data ||
-          "Ocorreu um erro. Por favor, tente novamente.";
+        const message =
+          (err as AxiosError<ErrorResponse>).response?.data?.message ||
+          "Erro ao processar a solicitação.";
 
         toast({
           title: "Erro",
-          description: errorMessage,
+          description: message,
           variant: "destructive",
         });
       } finally {
         setIsLoading(false);
       }
     },
-    [mode, formData, navigate, login, acceptedTerms]
+    [mode, formData, acceptedTerms, login, navigate]
   );
 
   return (
@@ -192,15 +199,15 @@ export default function Auth() {
             <CardDescription>
               {mode === AuthMode.Login
                 ? "Entre para acessar sua conta."
-                : "Crie uma nova conta."}
+                : "Crie sua conta gratuitamente."}
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            <div className="grid w-full items-center gap-4">
+            <div className="grid gap-4">
               {mode === AuthMode.Register && (
                 <>
-                  <div className="flex flex-col space-y-1.5">
+                  <div>
                     <Label htmlFor="nome">Nome</Label>
                     <Input
                       id="nome"
@@ -210,7 +217,7 @@ export default function Auth() {
                     />
                   </div>
 
-                  <div className="flex flex-col space-y-1.5">
+                  <div>
                     <Label htmlFor="cidade">Cidade</Label>
                     <Input
                       id="cidade"
@@ -220,7 +227,7 @@ export default function Auth() {
                     />
                   </div>
 
-                  <div className="flex flex-col space-y-1.5">
+                  <div>
                     <Label htmlFor="estado">Estado</Label>
                     <Input
                       id="estado"
@@ -232,7 +239,7 @@ export default function Auth() {
                 </>
               )}
 
-              <div className="flex flex-col space-y-1.5">
+              <div>
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -243,7 +250,7 @@ export default function Auth() {
                 />
               </div>
 
-              <div className="flex flex-col space-y-1.5">
+              <div>
                 <Label htmlFor="senha">Senha</Label>
                 <Input
                   id="senha"
@@ -253,11 +260,75 @@ export default function Auth() {
                   onChange={handleInputChange}
                 />
               </div>
+
+              {mode === AuthMode.Register && (
+                <>
+                  <div>
+                    <Label>Tipo de usuário</Label>
+                    <Select
+                      value={formData.tipoUsuario}
+                      onValueChange={handleSelectChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={UserType.Atleta}>
+                          Atleta
+                        </SelectItem>
+                        <SelectItem value={UserType.Marca}>
+                          Marca
+                        </SelectItem>
+                        <SelectItem value={UserType.Admin}>
+                          Admin
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* 🔐 CONSENTIMENTO LGPD */}
+                  <div className="flex items-start space-x-2 mt-2">
+                    <Checkbox
+                      id="terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(value) =>
+                        setAcceptedTerms(Boolean(value))
+                      }
+                    />
+                    <Label
+                      htmlFor="terms"
+                      className="text-sm text-muted-foreground"
+                    >
+                      Concordo com o uso dos meus dados de acordo com os{" "}
+                      <Link
+                        to="/termos"
+                        target="_blank"
+                        className="underline text-primary"
+                      >
+                        Termos de Uso
+                      </Link>{" "}
+                      e a{" "}
+                      <Link
+                        to="/privacidade"
+                        target="_blank"
+                        className="underline text-primary"
+                      >
+                        Política de Privacidade
+                      </Link>
+                      .
+                    </Label>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
 
-          <CardFooter className="flex flex-col">
-            <Button className="w-full" type="submit" disabled={isLoading}>
+          <CardFooter className="flex flex-col gap-4">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full"
+            >
               {isLoading
                 ? "Carregando..."
                 : mode === AuthMode.Login
@@ -265,21 +336,22 @@ export default function Auth() {
                 : "Cadastrar"}
             </Button>
 
-            <div className="mt-4 text-center text-sm">
+            <Link
+              to={`/auth?mode=${
+                mode === AuthMode.Login
+                  ? AuthMode.Register
+                  : AuthMode.Login
+              }`}
+              className="text-sm underline"
+            >
               {mode === AuthMode.Login
-                ? "Ainda não tem uma conta?"
-                : "Já tem uma conta?"}{" "}
-              <Link
-                to={`/auth?mode=${
-                  mode === AuthMode.Login
-                    ? AuthMode.Register
-                    : AuthMode.Login
-                }`}
-                className="underline"
-              >
-                {mode === AuthMode.Login ? "Cadastre-se" : "Entrar"}
-              </Link>
-            </div>
+                ? "Criar conta"
+                : "Já tenho conta"}
+            </Link>
+
+            <Link to="/" className="text-sm underline">
+              ← Voltar para a página inicial
+            </Link>
           </CardFooter>
         </form>
       </Card>
