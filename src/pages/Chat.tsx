@@ -1,181 +1,145 @@
-import { useEffect, useState, useRef } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
-import { useAuth } from "@/services/auth-context";
+import { useEffect, useState } from 'react';
 import {
   matches,
   messages,
-  MatchResponse,
-  MessageResponse,
-} from "@/services/apiService";
-import { toast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import DOMPurify from "dompurify";
+  messageTranslations, // ✅ NOME CORRETO
+} from '@/services/apiService';
 
-type Message = MessageResponse;
-type Match = MatchResponse;
+interface Message {
+  id: number;
+  idRemetente: number;
+  texto: string;
+  dataEnvio: string;
+  traducao?: string;
+}
+
+interface Match {
+  id: number;
+  nomeOutroUsuario: string;
+}
 
 export default function Chat() {
-  const { userData } = useAuth();
-  const navigate = useNavigate();
-  const { matchId: matchIdParam } = useParams<{ matchId: string }>();
+  const [matchSelecionado, setMatchSelecionado] = useState<Match | null>(null);
+  const [listaMatches, setListaMatches] = useState<Match[]>([]);
+  const [mensagens, setMensagens] = useState<Message[]>([]);
+  const [novaMensagem, setNovaMensagem] = useState('');
+  const [traduzindo, setTraduzindo] = useState<number | null>(null);
 
-  const matchId = matchIdParam ? Number(matchIdParam) : null;
+  const usuario = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [chatPartnerName, setChatPartnerName] = useState("Carregando...");
-  const [isLoading, setIsLoading] = useState(true);
-
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
+  // =========================
+  // 🔹 Carregar matches
+  // =========================
   useEffect(() => {
-    if (!userData || !matchId || isNaN(matchId)) {
-      toast({
-        title: "Erro",
-        description: "Usuário ou match inválido.",
-        variant: "destructive",
-      });
-      navigate("/dashboard");
-      return;
-    }
+    matches.getMatches().then((res) => {
+      setListaMatches(res.data);
+    });
+  }, []);
 
-    const loadChat = async () => {
-      try {
-        const matchResponse = await matches.getMatches();
-        const foundMatch = matchResponse.data.find(
-          (m: Match) => m.id === matchId
-        );
-
-        if (!foundMatch) {
-          toast({
-            title: "Erro",
-            description: "Match não encontrado.",
-            variant: "destructive",
-          });
-          navigate("/dashboard");
-          return;
-        }
-
-        setChatPartnerName(foundMatch.nomeOutroUsuario);
-
-        const messagesResponse = await messages.getByMatchId(matchId);
-        setCurrentMessages(messagesResponse.data);
-      } catch (error) {
-        console.error(error);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar o chat.",
-          variant: "destructive",
-        });
-        navigate("/dashboard");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadChat();
-  }, [userData, matchId, navigate]);
-
+  // =========================
+  // 🔹 Carregar mensagens
+  // =========================
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [currentMessages]);
+    if (!matchSelecionado) return;
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !userData || !matchId) return;
+    messages.getByMatchId(matchSelecionado.id).then((res) => {
+      setMensagens(res.data);
+    });
+  }, [matchSelecionado]);
 
-    // 🚨 CONTRATO IDÊNTICO AO DTO DO BACKEND
-    const payload = {
-      idMatch: matchId,
-      idRemetente: userData.id,
-      texto: newMessage.trim(),
-    };
+  // =========================
+  // 🔹 Enviar mensagem
+  // =========================
+  const enviarMensagem = async () => {
+    if (!matchSelecionado || !novaMensagem.trim()) return;
 
+    const res = await messages.send({
+      idMatch: matchSelecionado.id,
+      idRemetente: usuario.id,
+      texto: novaMensagem,
+    });
+
+    setMensagens((prev) => [...prev, res.data]);
+    setNovaMensagem('');
+  };
+
+  // =========================
+  // 🔤 Traduzir mensagem
+  // =========================
+  const traduzirMensagem = async (mensagem: Message) => {
     try {
-      const response = await messages.send(payload);
-      setCurrentMessages((prev) => [...prev, response.data]);
-      setNewMessage("");
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível enviar a mensagem.",
-        variant: "destructive",
+      setTraduzindo(mensagem.id);
+
+      const res = await messageTranslations.translate({
+        idMensagem: mensagem.id,
+        idiomaOrigem: 'pt',
+        idiomaDestino: 'en',
       });
+
+      setMensagens((prev) =>
+        prev.map((m) =>
+          m.id === mensagem.id
+            ? { ...m, traducao: res.data.textoTraduzido }
+            : m
+        )
+      );
+    } finally {
+      setTraduzindo(null);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        Carregando chat...
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 p-8 pt-6 h-screen flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-3xl font-bold">Chat com {chatPartnerName}</h2>
-        <Link to="/dashboard">
-          <Button variant="outline">Voltar</Button>
-        </Link>
-      </div>
+    <div className="chat-container">
+      <aside className="chat-sidebar">
+        <h3>Conversas</h3>
+        {listaMatches.map((match) => (
+          <button
+            key={match.id}
+            onClick={() => setMatchSelecionado(match)}
+            className={
+              matchSelecionado?.id === match.id ? 'active' : ''
+            }
+          >
+            {match.nomeOutroUsuario}
+          </button>
+        ))}
+      </aside>
 
-      <Card className="flex flex-col flex-1">
-        <CardHeader>
-          <CardTitle>Conversa</CardTitle>
-        </CardHeader>
+      <main className="chat-main">
+        {matchSelecionado ? (
+          <>
+            <div className="messages">
+              {mensagens.map((msg) => (
+                <div key={msg.id} className="message">
+                  <p>{msg.traducao ?? msg.texto}</p>
 
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <ScrollArea className="h-full px-6 py-4">
-            <div className="space-y-4">
-              {currentMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.idRemetente === userData.id
-                      ? "justify-end"
-                      : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[70%] p-3 rounded-lg ${
-                      message.idRemetente === userData.id
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    <p
-                      className="text-sm"
-                      dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(message.texto),
-                      }}
-                    />
-                    <p className="text-xs opacity-70 mt-1">
-                      {new Date(message.dataEnvio).toLocaleTimeString()}
-                    </p>
-                  </div>
+                  {!msg.traducao && (
+                    <button
+                      onClick={() => traduzirMensagem(msg)}
+                      disabled={traduzindo === msg.id}
+                    >
+                      {traduzindo === msg.id
+                        ? 'Traduzindo...'
+                        : 'Traduzir'}
+                    </button>
+                  )}
                 </div>
               ))}
-              <div ref={messagesEndRef} />
             </div>
-          </ScrollArea>
-        </CardContent>
 
-        <div className="p-6 border-t flex gap-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder="Digite sua mensagem..."
-            className="flex-1 border rounded px-3 py-2"
-          />
-          <Button onClick={handleSendMessage}>Enviar</Button>
-        </div>
-      </Card>
+            <div className="chat-input">
+              <input
+                value={novaMensagem}
+                onChange={(e) => setNovaMensagem(e.target.value)}
+                placeholder="Digite sua mensagem"
+              />
+              <button onClick={enviarMensagem}>Enviar</button>
+            </div>
+          </>
+        ) : (
+          <p>Selecione uma conversa</p>
+        )}
+      </main>
     </div>
   );
 }
