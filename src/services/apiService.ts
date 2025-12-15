@@ -181,7 +181,7 @@ export interface MessageResponse {
 const auth = {
   login: (data: LoginRequest) => api.post<LoginResponse>('/auth/login', data),
   // Atualizado para /register (padrão inglês usado em Spring Boot)
-  register: (data: RegisterRequest) => api.post<string>('/auth/register', data),
+  register: (data: RegisterRequest) => api.post<string>('/auth/registrar', data),
 };
 
 const users = {
