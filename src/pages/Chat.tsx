@@ -6,7 +6,6 @@ import {
   messages,
   MatchResponse,
   MessageResponse,
-  SendMessageRequest,
 } from "@/services/apiService";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,8 @@ export default function Chat() {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !userData || !matchId) return;
 
-    const payload: SendMessageRequest = {
+    // 🚨 CONTRATO IDÊNTICO AO DTO DO BACKEND
+    const payload = {
       idMatch: matchId,
       idRemetente: userData.id,
       texto: newMessage.trim(),
@@ -135,14 +135,14 @@ export default function Chat() {
                 <div
                   key={message.id}
                   className={`flex ${
-                    message.idRemetente === userData?.id
+                    message.idRemetente === userData.id
                       ? "justify-end"
                       : "justify-start"
                   }`}
                 >
                   <div
                     className={`max-w-[70%] p-3 rounded-lg ${
-                      message.idRemetente === userData?.id
+                      message.idRemetente === userData.id
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted"
                     }`}
