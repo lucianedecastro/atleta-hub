@@ -34,19 +34,18 @@ export default function Chat() {
   useEffect(() => {
     if (!userData || !matchId || isNaN(matchId)) {
       toast({
-        title: "Erro de Navegação",
-        description: "Dados do usuário ou ID do match inválidos.",
+        title: "Erro",
+        description: "Usuário ou match inválido.",
         variant: "destructive",
       });
-      navigate("/");
+      navigate("/dashboard");
       return;
     }
 
-    const fetchChatData = async () => {
-      setIsLoading(true);
+    const loadChat = async () => {
       try {
-        const allMatchesResponse = await matches.getMatches();
-        const foundMatch = allMatchesResponse.data.find(
+        const matchResponse = await matches.getMatches();
+        const foundMatch = matchResponse.data.find(
           (m: Match) => m.id === matchId
         );
 
@@ -68,7 +67,7 @@ export default function Chat() {
         console.error(error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar o chat.",
+          description: "Erro ao carregar o chat.",
           variant: "destructive",
         });
         navigate("/dashboard");
@@ -77,7 +76,7 @@ export default function Chat() {
       }
     };
 
-    fetchChatData();
+    loadChat();
   }, [userData, matchId, navigate]);
 
   useEffect(() => {
@@ -85,28 +84,20 @@ export default function Chat() {
   }, [currentMessages]);
 
   const handleSendMessage = async () => {
-    if (!userData || !matchId || newMessage.trim() === "") {
-      toast({
-        title: "Aviso",
-        description: "Mensagem vazia ou dados inválidos.",
-      });
-      return;
-    }
+    if (!newMessage.trim() || !userData || !matchId) return;
+
+    const payload: SendMessageRequest = {
+      idMatch: matchId,
+      idRemetente: userData.id,
+      texto: newMessage.trim(),
+    };
 
     try {
-      // ✅ PAYLOAD CORRIGIDO
-      const payload: SendMessageRequest = {
-        idMatch: matchId,
-        idRemetente: userData.id,
-        texto: newMessage.trim(),
-      };
-
       const response = await messages.send(payload);
-
       setCurrentMessages((prev) => [...prev, response.data]);
       setNewMessage("");
     } catch (error) {
-      console.error("Erro ao enviar mensagem:", error);
+      console.error(error);
       toast({
         title: "Erro",
         description: "Não foi possível enviar a mensagem.",
@@ -115,28 +106,18 @@ export default function Chat() {
     }
   };
 
-  if (!userData) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        Carregando usuário...
-      </div>
-    );
-  }
-
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex items-center justify-center h-screen">
         Carregando chat...
       </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6 h-screen flex flex-col">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">
-          Chat com {chatPartnerName}
-        </h2>
+    <div className="flex-1 p-8 pt-6 h-screen flex flex-col">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-3xl font-bold">Chat com {chatPartnerName}</h2>
         <Link to="/dashboard">
           <Button variant="outline">Voltar</Button>
         </Link>
@@ -154,14 +135,14 @@ export default function Chat() {
                 <div
                   key={message.id}
                   className={`flex ${
-                    message.idRemetente === userData.id
+                    message.idRemetente === userData?.id
                       ? "justify-end"
                       : "justify-start"
                   }`}
                 >
                   <div
                     className={`max-w-[70%] p-3 rounded-lg ${
-                      message.idRemetente === userData.id
+                      message.idRemetente === userData?.id
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted"
                     }`}
@@ -172,7 +153,7 @@ export default function Chat() {
                         __html: DOMPurify.sanitize(message.texto),
                       }}
                     />
-                    <p className="text-xs mt-1 opacity-70">
+                    <p className="text-xs opacity-70 mt-1">
                       {new Date(message.dataEnvio).toLocaleTimeString()}
                     </p>
                   </div>
@@ -186,11 +167,11 @@ export default function Chat() {
         <div className="p-6 border-t flex gap-2">
           <input
             type="text"
-            placeholder="Digite sua mensagem..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            className="border p-2 rounded w-full"
+            placeholder="Digite sua mensagem..."
+            className="flex-1 border rounded px-3 py-2"
           />
           <Button onClick={handleSendMessage}>Enviar</Button>
         </div>
