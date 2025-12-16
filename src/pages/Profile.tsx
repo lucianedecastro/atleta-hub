@@ -4,7 +4,7 @@ import { useAuth } from "@/services/auth-context";
 import {
   users,
   profile as profileApi,
-  vitrine as vitrineApi, // <--- Importamos a API da Vitrine
+  vitrine as vitrineApi,
   modalidades,
   UpdateAtletaProfileRequest,
   UpdateMarcaProfileRequest,
@@ -21,19 +21,18 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input"; // Import do Input para upload
+import { Input } from "@/components/ui/input";
 
 // Enums, Interfaces e Configs
 enum UserType { ATLETA = "ATLETA", MARCA = "MARCA" }
 
-// --- Atualizado com logo_url ---
 interface AtletaProfileData { id: number; nome: string; email: string; data_nascimento: string | null; telefone_contato: string | null; idade: number | null; altura: number | null; peso: number | null; modalidade: string | null; posicao: string | null; competicoes_titulos: string | null; historico: string | null; midiakit_url: string | null; observacoes: string | null; redes_social: string | null; }
-interface MarcaProfileData { id: number; nome: string; email: string; produto: string | null; tempo_mercado: number | null; atletas_patrocinados: string | null; tipo_investimento: string | null; redes_social: string | null; logoUrl?: string | null; } // logoUrl aqui!
+interface MarcaProfileData { id: number; nome: string; email: string; produto: string | null; tempo_mercado: number | null; atletas_patrocinados: string | null; tipo_investimento: string | null; redes_social: string | null; logoUrl?: string | null; }
 
 interface FieldConfig<T> { key: keyof T; label: string; inputType?: React.HTMLInputTypeAttribute; isTextArea?: boolean; }
 
 const atletaFieldConfigs: FieldConfig<AtletaProfileData>[] = [ { key: "nome", label: "Nome" }, { key: "email", label: "Email", inputType: "email" }, { key: "data_nascimento", label: "Data de Nascimento", inputType: "date" }, { key: "telefone_contato", label: "Telefone de Contato", inputType: "tel" }, { key: "idade", label: "Idade", inputType: "number" }, { key: "altura", label: "Altura (cm)", inputType: "number" }, { key: "peso", label: "Peso (kg)", inputType: "number" }, { key: "modalidade", label: "Modalidade" }, { key: "posicao", label: "Posição" }, { key: "competicoes_titulos", label: "Competições e Títulos", isTextArea: true }, { key: "historico", label: "Histórico", isTextArea: true }, { key: "midiakit_url", label: "Link do Mídia Kit", inputType: "url" }, { key: "observacoes", label: "Observações", isTextArea: true }, { key: "redes_social", label: "Redes Sociais", inputType: "url" }, ];
-const marcaFieldConfigs: FieldConfig<MarcaProfileData>[] = [ { key: "nome", label: "Nome" }, { key: "email", label: "Email", inputType: "email" }, { key: "produto", label: "Produto Principal" }, { key: "tempo_mercado", label: "Tempo no Mercado (anos)", inputType: "number" }, { key: "atletas_patrocinados", label: "Atletas Patrocinados", isTextArea: true }, { key: "tipo_investimento", label: "Tipo de Investimento" }, { key: "redes_social", label: "Redes Sociais", inputType: "url" }, ]; // Logo não entra aqui, tem componente próprio
+const marcaFieldConfigs: FieldConfig<MarcaProfileData>[] = [ { key: "nome", label: "Nome" }, { key: "email", label: "Email", inputType: "email" }, { key: "produto", label: "Produto Principal" }, { key: "tempo_mercado", label: "Tempo no Mercado (anos)", inputType: "number" }, { key: "atletas_patrocinados", label: "Atletas Patrocinados", isTextArea: true }, { key: "tipo_investimento", label: "Tipo de Investimento" }, { key: "redes_social", label: "Redes Sociais", inputType: "url" }, ];
 
 function isAtletaProfileData(profile: any): profile is AtletaProfileData { return "modalidade" in profile; }
 
@@ -114,7 +113,7 @@ const ProfileFields = ({ profile, isEditing, isMyProfile, handleInputChange, han
   );
 };
 
-// --- NOVO COMPONENTE: LOGO UPLOAD (PARA MARCAS) 🏢 ---
+// --- COMPONENTE LOGO UPLOAD (MARCAS) ---
 const LogoUploadSection = ({ logoUrl, isEditing, onLogoUpdate }: {
     logoUrl?: string | null,
     isEditing: boolean,
@@ -129,9 +128,6 @@ const LogoUploadSection = ({ logoUrl, isEditing, onLogoUpdate }: {
         try {
             setUploading(true);
             const response = await vitrineApi.uploadMidia(file, 'FOTO');
-            // A API retorna a vitrine, mas queremos a URL da última foto adicionada
-            // Neste caso, como é logo, assumimos que a URL retornada nas fotos é a que queremos
-            // AJUSTE: O ideal seria a API retornar a URL direta, mas vamos pegar a última da lista
             if (response.data.fotos && response.data.fotos.length > 0) {
                 const newLogoUrl = response.data.fotos[response.data.fotos.length - 1];
                 onLogoUpdate(newLogoUrl);
@@ -174,7 +170,7 @@ const LogoUploadSection = ({ logoUrl, isEditing, onLogoUpdate }: {
     );
 };
 
-// --- NOVO COMPONENTE: VITRINE SECTION (PARA ATLETAS) 📸 ---
+// --- COMPONENTE VITRINE (ATLETAS) ---
 const VitrineSection = ({ vitrineData, isMyProfile, onUploadSuccess }: { 
   vitrineData: VitrineResponse | null, 
   isMyProfile: boolean,
@@ -186,9 +182,11 @@ const VitrineSection = ({ vitrineData, isMyProfile, onUploadSuccess }: {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const maxSize = tipo === 'FOTO' ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
+    // CORREÇÃO: Limite aumentado para 100MB para casar com o Backend
+    const maxSize = tipo === 'FOTO' ? 10 * 1024 * 1024 : 100 * 1024 * 1024;
+    
     if (file.size > maxSize) {
-      toast({ title: "Arquivo muito grande", description: `Limite: ${tipo === 'FOTO' ? '10MB' : '50MB'}.`, variant: "destructive" });
+      toast({ title: "Arquivo muito grande", description: `Limite: ${tipo === 'FOTO' ? '10MB' : '100MB'}.`, variant: "destructive" });
       return;
     }
 
@@ -289,6 +287,7 @@ export default function Profile() {
       setLoading(true);
       setError(null);
       try {
+        // 1. Busca Dados do Perfil (SQL)
         let profilePromise;
         if (isMyProfile) {
           profilePromise = userData.userType === 'atleta'
@@ -308,19 +307,21 @@ export default function Profile() {
         setProfileData(profileResponse.data);
         setModalidadesList(modalidadesResponse.data);
 
-        // Busca Vitrine apenas para ATLETAS
-        // Para Marcas, não usamos o objeto vitrine, usamos o campo logoUrl direto
-        if (userData.userType === 'atleta') {
+        // 2. LÓGICA CORRIGIDA: Busca Vitrine (Mongo) se o perfil carregado for de um ATLETA
+        // Independente se sou eu (Atleta) ou se sou uma Marca visitando
+        if (isAtletaProfileData(profileResponse.data)) {
             try {
-                // Se for meu perfil, pego minha vitrine
-                // Se for perfil de outro atleta, precisaria de um endpoint público (ex: vitrineApi.getById(id))
-                // Por enquanto, focamos no "Meu Perfil"
+                let vitrineRes;
                 if (isMyProfile) {
-                    const vitrineRes = await vitrineApi.getMyVitrine();
-                    setVitrineData(vitrineRes.data);
+                    // Minha própria vitrine
+                    vitrineRes = await vitrineApi.getMyVitrine();
+                } else {
+                    // Visitando outro atleta -> Usa o endpoint novo /vitrine/{id}
+                    vitrineRes = await vitrineApi.getVitrineByUserId(profileResponse.data.id);
                 }
+                setVitrineData(vitrineRes.data);
             } catch (err) {
-                console.log("Sem vitrine.", err);
+                console.log("Vitrine não encontrada ou vazia.");
             }
         }
 
@@ -358,11 +359,9 @@ export default function Profile() {
     });
   };
 
-  // Handler específico para atualização da logo (Marca)
   const handleLogoUpdate = (newLogoUrl: string) => {
       setProfileData((prev) => {
           if (!prev) return null;
-          // Força o cast porque sabemos que só chamamos isso se for Marca
           return { ...prev, logoUrl: newLogoUrl } as MarcaProfileData;
       });
   };
@@ -421,7 +420,6 @@ export default function Profile() {
         <CardContent className="flex-1 overflow-hidden p-0">
           <div className="h-full px-6 py-4 overflow-y-auto max-h-[calc(100vh-200px)]"> 
             
-            {/* SEÇÃO DE LOGO (APENAS PARA MARCAS) */}
             {!isAtleta && (
                 <LogoUploadSection 
                     logoUrl={(profileData as MarcaProfileData).logoUrl}
@@ -430,7 +428,6 @@ export default function Profile() {
                 />
             )}
 
-            {/* CAMPOS DE TEXTO */}
             <ProfileFields
               profile={profileData}
               isEditing={isEditing}
@@ -440,7 +437,6 @@ export default function Profile() {
               modalidadesList={modalidadesList}
             />
 
-            {/* SEÇÃO DA VITRINE (APENAS PARA ATLETAS) */}
             {isAtleta && (
                 <>
                     <div className="my-6 border-t" />

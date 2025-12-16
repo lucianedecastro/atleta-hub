@@ -233,6 +233,8 @@ const profile = {
 // 📸 Módulo Vitrine
 const vitrine = {
   getMyVitrine: () => api.get<VitrineResponse>('/vitrine/me'),
+  getVitrineByUserId: (userId: number) => api.get<VitrineResponse>(`/vitrine/${userId}`),
+  updateVitrine: (data: VitrineResponse) => api.put<VitrineResponse>('/vitrine', data),
   
   uploadMidia: (file: File, tipo: 'FOTO' | 'VIDEO') => {
     const formData = new FormData();
