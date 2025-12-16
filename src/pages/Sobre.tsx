@@ -3,9 +3,7 @@ import {
   MessageCircle,
   Search,
   Handshake,
-  SlidersHorizontal,
   LineChart,
-  Newspaper,
   Languages,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -177,7 +175,21 @@ const Sobre = () => {
         </div>
       </div>
 
+      {/* Link para Arquitetura */}
       <div className="mt-12 text-center">
+        <p className="text-muted-foreground mb-4">
+          Para um detalhamento técnico da solução, componentes, fluxos e
+          decisões arquiteturais:
+        </p>
+        <Link to="/arquitetura">
+          <Button variant="secondary">
+            Ver Arquitetura da Plataforma
+          </Button>
+        </Link>
+      </div>
+
+      {/* Botão de retorno */}
+      <div className="mt-6 text-center">
         <Link to="/">
           <Button variant="outline">← Voltar para a Página Inicial</Button>
         </Link>
