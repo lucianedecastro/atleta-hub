@@ -17,13 +17,22 @@ const Sobre = () => {
       <h1 className="text-4xl font-bold mb-6">Sobre o AtletaHub</h1>
 
       <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
-        O <strong>AtletaHub</strong> é uma plataforma digital já desenvolvida e
-        hospedada no <strong>Google Cloud Platform (GCP)</strong>, com frontend
-        em <strong>React + Vite</strong> e backend estruturado com{" "}
+        O <strong>AtletaHub</strong> é uma plataforma digital desenvolvida com
+        frontend em <strong>React + Vite</strong> e backend estruturado em{" "}
         <strong>Java + Spring Boot</strong>. Seu propósito central é{" "}
         <strong>revolucionar o acesso a patrocínios</strong> para atletas
         amadores no Brasil, conectando atletas e marcas de forma transparente,
         eficiente e inteligente.
+      </p>
+
+      <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
+        Inicialmente concebida e hospedada em ambiente de nuvem tradicional, a
+        plataforma passou por um <strong>processo de migração de
+        infraestrutura</strong>, adotando uma arquitetura mais flexível,
+        portátil e alinhada a boas práticas modernas de engenharia de software.
+        Essa migração permitiu maior controle sobre o ciclo de deploy,
+        escalabilidade progressiva e evolução contínua das funcionalidades,
+        acompanhando o amadurecimento do projeto.
       </p>
 
       {/* ODSs da Agenda 2030 */}
@@ -38,9 +47,9 @@ const Sobre = () => {
         <br />
         <br />
         • <strong>ODS 9 (Indústria, Inovação e Infraestrutura)</strong>: A
-        plataforma oferece uma infraestrutura digital inovadora, escalável e
-        acessível, conectando atletas e marcas por meio de soluções modernas de
-        software, como chat em tempo real e tradução automática.
+        plataforma oferece uma infraestrutura digital inovadora e escalável,
+        conectando atletas e marcas por meio de soluções modernas de software,
+        como chat em tempo real e serviços de tradução automática.
         <br />
         <br />
         • <strong>ODS 8 (Trabalho Decente e Crescimento Econômico)</strong>: Ao
@@ -49,12 +58,13 @@ const Sobre = () => {
         historicamente marginalizados.
         <br />
         <br />
-        • <strong>ODS 10 (Redução das Desigualdades)</strong>: A plataforma
-        reduz barreiras econômicas, geográficas e linguísticas. O recurso de{" "}
-        <strong>tradução simultânea bidirecional</strong> permite que atletas se
-        comuniquem exclusivamente em português, enquanto marcas estrangeiras
-        utilizam seus próprios idiomas, promovendo inclusão e equidade no acesso
-        a oportunidades globais.
+        • <strong>ODS 10 (Redução das Desigualdades)</strong>: A plataforma atua
+        diretamente na redução de barreiras econômicas, geográficas e
+        linguísticas. O recurso de{" "}
+        <strong>tradução simultânea bidirecional</strong>, atualmente em
+        funcionamento no chat, permite que atletas se comuniquem em português,
+        enquanto marcas estrangeiras utilizam seus próprios idiomas, promovendo
+        inclusão e equidade no acesso a oportunidades globais.
         <br />
         <br />
         Dessa forma, o <strong>AtletaHub</strong> materializa o uso da engenharia
@@ -85,7 +95,7 @@ const Sobre = () => {
         </li>
         <li>
           Reduzir a fricção no primeiro contato entre atletas e marcas, tornando
-          a comunicação mais natural e acessível.
+          a comunicação mais natural, acessível e segura.
         </li>
         <li>
           Oferecer às marcas ferramentas eficazes para encontrar perfis
