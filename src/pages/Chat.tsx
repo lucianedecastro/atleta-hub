@@ -81,12 +81,34 @@ export default function Chat() {
     try {
       setTraduzindo(mensagem.id);
 
+      // 1️⃣ SE JÁ TEM TRADUÇÃO: apenas remove/oculta (lógica UI)
+      if (mensagem.traducao) {
+        setMensagens((prev) =>
+          prev.map((m) =>
+            m.id === mensagem.id
+              ? { ...m, traducao: undefined } // Remove a tradução da UI
+              : m
+          )
+        );
+        return; // ⬅️ NÃO chama o backend!
+      }
+
+      // 2️⃣ SE NÃO TEM TRADUÇÃO: detecta e chama backend
+      // Detecção SIMPLES no frontend - caracteres portugueses
+      const temCaracteresPortugueses = /[áàâãéèêíïóôõöúçñ]/i.test(mensagem.texto);
+      
+      // Define direção PT↔EN
+      const idiomaOrigem = temCaracteresPortugueses ? "pt" : "en";
+      const idiomaDestino = temCaracteresPortugueses ? "en" : "pt";
+
+      // 3️⃣ Chama backend (MESMO endpoint, parâmetros diferentes)
       const res = await messageTranslations.translate({
         idMensagem: mensagem.id,
-        idiomaOrigem: "pt",
-        idiomaDestino: "en",
+        idiomaOrigem,
+        idiomaDestino,
       });
 
+      // 4️⃣ Atualiza UI com nova tradução
       setMensagens((prev) =>
         prev.map((m) =>
           m.id === mensagem.id
@@ -172,7 +194,7 @@ export default function Chat() {
                       >
                         <p>{msg.traducao ?? msg.texto}</p>
 
-                        {!msg.traducao && !isMine && (
+                        {!isMine && (
                           <Button
                             variant="link"
                             size="sm"
@@ -182,7 +204,9 @@ export default function Chat() {
                           >
                             {traduzindo === msg.id
                               ? "Traduzindo..."
-                              : "Traduzir"}
+                              : msg.traducao 
+                                ? "Ver Original"  // 🔄 Texto do botão muda
+                                : "Traduzir"}
                           </Button>
                         )}
                       </div>
