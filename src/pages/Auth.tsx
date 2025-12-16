@@ -24,7 +24,6 @@ import { useAuth } from "@/services/auth-context";
 import { auth, LoginRequest } from "@/services/apiService";
 import { AxiosError } from "axios";
 
-
 enum AuthMode {
   Login = "login",
   Register = "register",
@@ -43,6 +42,7 @@ interface AuthFormData {
   tipoUsuario: UserType;
   cidade: string;
   estado: string;
+  idioma: string; // --- CAMPO NOVO ---
 }
 
 interface ErrorResponse {
@@ -56,6 +56,7 @@ const initialFormData: AuthFormData = {
   tipoUsuario: UserType.Atleta,
   cidade: "",
   estado: "",
+  idioma: "pt", // --- PADRÃO NOVO ---
 };
 
 export default function Auth() {
@@ -98,6 +99,11 @@ export default function Auth() {
     }));
   }, []);
 
+  // --- NOVO HANDLER PARA IDIOMA ---
+  const handleIdiomaChange = useCallback((value: string) => {
+    setFormData((prev) => ({ ...prev, idioma: value }));
+  }, []);
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -132,6 +138,7 @@ export default function Auth() {
 
           setIsLoading(true);
 
+          // --- PAYLOAD ATUALIZADO ---
           const payload = {
             nome: formData.nome,
             email: formData.email,
@@ -139,6 +146,7 @@ export default function Auth() {
             tipoUsuario: formData.tipoUsuario,
             cidade: formData.cidade,
             estado: formData.estado,
+            idioma: formData.idioma, // --- ENVIANDO IDIOMA ---
           };
 
           await auth.register(payload);
@@ -286,6 +294,24 @@ export default function Auth() {
                         <SelectItem value={UserType.Admin}>
                           Admin
                         </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* --- SELETOR DE IDIOMA (NOVO) --- */}
+                  <div>
+                    <Label>Idioma de preferência</Label>
+                    <Select
+                      value={formData.idioma}
+                      onValueChange={handleIdiomaChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione seu idioma" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pt">🇧🇷 Português</SelectItem>
+                        <SelectItem value="en">🇺🇸 English</SelectItem>
+                        <SelectItem value="es">🇪🇸 Español</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

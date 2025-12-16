@@ -76,6 +76,8 @@ export interface RegisterRequest {
   tipoUsuario: 'ATLETA' | 'MARCA' | 'ADMIN';
   cidade: string;
   estado: string;
+  // --- Campo adicionado para suportar a funcionalidade de idioma ---
+  idioma: string;
 }
 
 // -------- User --------
