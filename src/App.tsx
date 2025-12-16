@@ -7,6 +7,7 @@ import Privacidade from "@/pages/Privacidade";
 import Profile from "./pages/Profile";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
+import Arquitetura from "@/pages/Arquitetura";
 import Sobre from "./pages/Sobre"; 
 import { AuthProvider } from "./services/auth-context";
 import "./App.css";
@@ -19,7 +20,8 @@ function App() {
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/sobre" element={<Sobre />} /> {/* ✅ NOVA ROTA */}
+            <Route path="/sobre" element={<Sobre />} /> 
+            <Route path="/arquitetura" element={<Arquitetura />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/termos" element={<Termos />} />
             <Route path="/privacidade" element={<Privacidade />} />
