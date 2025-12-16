@@ -6,7 +6,7 @@ console.log('API_BASE_URL atual no frontend:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
 });
 
 // =====================
@@ -76,7 +76,6 @@ export interface RegisterRequest {
   tipoUsuario: 'ATLETA' | 'MARCA' | 'ADMIN';
   cidade: string;
   estado: string;
-  // --- Campo adicionado para suportar a funcionalidade de idioma ---
   idioma: string;
 }
 
@@ -102,6 +101,8 @@ export interface UserDetailsResponse {
   dataNascimento?: string | null;
   telefoneContato?: string | null;
   midiakitUrl?: string | null;
+  // --- NOVO CAMPO: LOGO DA MARCA ---
+  logoUrl?: string | null; 
 }
 
 // -------- Profile --------
@@ -128,6 +129,17 @@ export interface UpdateMarcaProfileRequest {
   atletasPatrocinados?: string | null;
   tipoInvestimento?: string | null;
   redesSocial?: string | null;
+  // --- NOVO CAMPO: LOGO DA MARCA ---
+  logoUrl?: string | null;
+}
+
+// -------- Vitrine --------
+export interface VitrineResponse {
+  id: string;
+  idUsuario: number;
+  biografiaCompleta?: string;
+  fotos: string[];
+  videos: string[];
 }
 
 // -------- Interesses --------
@@ -176,14 +188,11 @@ export interface MessageResponse {
   dataEnvio: string;
 }
 
-// ==================================================
-// 🔤 Tradução de Mensagens (NOVO)
-// ==================================================
-
+// -------- Tradução --------
 export interface CriarMensagemTraducaoRequest {
   idMensagem: number;
-  idiomaOrigem: string;   // ex: "pt"
-  idiomaDestino: string;  // ex: "en"
+  idiomaOrigem: string;
+  idiomaDestino: string;
 }
 
 export interface MensagemTraducaoResponse {
@@ -221,6 +230,23 @@ const profile = {
     api.put('/perfil/marca', data),
 };
 
+// 📸 Módulo Vitrine
+const vitrine = {
+  getMyVitrine: () => api.get<VitrineResponse>('/vitrine/me'),
+  
+  uploadMidia: (file: File, tipo: 'FOTO' | 'VIDEO') => {
+    const formData = new FormData();
+    formData.append('arquivo', file);
+    formData.append('tipo', tipo);
+    
+    return api.post<VitrineResponse>('/vitrine/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  }
+};
+
 const interests = {
   sendInterest: (data: InteresseRequest) =>
     api.post<InteresseResponse>('/interesses', data),
@@ -239,7 +265,6 @@ const messages = {
     api.get<MessageResponse[]>(`/mensagens/match/${matchId}`),
 };
 
-// 🔤 Tradução
 const messageTranslations = {
   translate: (data: CriarMensagemTraducaoRequest) =>
     api.post<MensagemTraducaoResponse>('/mensagens/traducoes', data),
@@ -253,6 +278,7 @@ export {
   auth,
   users,
   profile,
+  vitrine,
   interests,
   matches,
   messages,
