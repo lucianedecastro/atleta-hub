@@ -30,38 +30,43 @@ const Sobre = () => {
       <h2 className="text-2xl font-semibold mb-6">
         Contribuição para os Objetivos de Desenvolvimento Sustentável (ODS)
       </h2>
+
       <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
-        O <strong>AtletaHub</strong> aborda diretamente três Objetivos de
-        Desenvolvimento Sustentável (ODS) da Agenda 2030 da ONU:
+        O <strong>AtletaHub</strong> contribui diretamente para os Objetivos de
+        Desenvolvimento Sustentável (ODS) da Agenda 2030 da ONU, ao utilizar
+        tecnologia como instrumento de inclusão social, econômica e cultural:
         <br />
         <br />
-        • <strong>ODS 9 (Indústria, Inovação e Infraestrutura)</strong>: Ao
-        oferecer uma infraestrutura digital inovadora para atletas amadores, o
-        AtletaHub representa uma solução tecnológica que moderniza o acesso a
-        oportunidades e recursos no esporte.
+        • <strong>ODS 9 (Indústria, Inovação e Infraestrutura)</strong>: A
+        plataforma oferece uma infraestrutura digital inovadora, escalável e
+        acessível, conectando atletas e marcas por meio de soluções modernas de
+        software, como chat em tempo real e tradução automática.
         <br />
         <br />
-        • <strong>ODS 8 (Trabalho Decente e Crescimento Econômico)</strong>: A
-        plataforma estimula a profissionalização e geração de renda no esporte
-        amador, ao facilitar a conexão entre atletas e marcas patrocinadoras.
+        • <strong>ODS 8 (Trabalho Decente e Crescimento Econômico)</strong>: Ao
+        facilitar o acesso a patrocínios, o AtletaHub estimula a
+        profissionalização do esporte amador e a geração de renda para atletas
+        historicamente marginalizados.
         <br />
         <br />
-        • <strong>ODS 10 (Redução das Desigualdades)</strong>: Democratiza o
-        acesso a patrocínios, superando barreiras financeiras e geográficas,
-        promovendo inclusão e equidade no esporte, especialmente em regiões
-        menos favorecidas como Ubatuba, SP, onde o projeto foi iniciado.
+        • <strong>ODS 10 (Redução das Desigualdades)</strong>: A plataforma
+        reduz barreiras econômicas, geográficas e linguísticas. O recurso de{" "}
+        <strong>tradução simultânea bidirecional</strong> permite que atletas se
+        comuniquem exclusivamente em português, enquanto marcas estrangeiras
+        utilizam seus próprios idiomas, promovendo inclusão e equidade no acesso
+        a oportunidades globais.
         <br />
         <br />
-        Em resumo, o <strong>AtletaHub</strong> é uma aplicação prática de
-        engenharia de software com impacto social positivo, alinhada aos
-        princípios da Agenda 2030.
+        Dessa forma, o <strong>AtletaHub</strong> materializa o uso da engenharia
+        de software como ferramenta de impacto social, alinhada aos princípios
+        da Agenda 2030.
       </p>
 
       <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
         A iniciativa busca mitigar a escassez de recursos que limita o
         desenvolvimento esportivo no país, democratizando o acesso a
         oportunidades e valorizando talentos que, muitas vezes, não têm
-        visibilidade.
+        visibilidade nem domínio de outros idiomas.
       </p>
 
       <h2 className="text-2xl font-semibold mb-6">Objetivos do AtletaHub</h2>
@@ -76,19 +81,19 @@ const Sobre = () => {
         </li>
         <li>
           Democratizar o acesso a patrocínios, ampliando oportunidades
-          independentemente de contatos prévios.
+          independentemente de contatos prévios ou domínio de outros idiomas.
         </li>
         <li>
           Reduzir a fricção no primeiro contato entre atletas e marcas, tornando
-          a comunicação mais natural.
+          a comunicação mais natural e acessível.
         </li>
         <li>
           Oferecer às marcas ferramentas eficazes para encontrar perfis
           relevantes de forma rápida e organizada.
         </li>
         <li>
-          Fortalecer a imagem de marcas que apoiam o esporte amador,
-          especialmente atletas iniciantes e de base.
+          Fortalecer a imagem de marcas que apoiam o esporte amador com práticas
+          alinhadas a critérios ESG.
         </li>
       </ul>
 
@@ -100,17 +105,30 @@ const Sobre = () => {
             <User className="w-5 h-5" /> Perfis Abrangentes
           </h3>
           <p className="text-muted-foreground">
-            Atletas criam perfis completos com histórico, mídias e demandas.
-            Marcas também têm perfis institucionais com critérios de apoio.
+            Atletas criam perfis completos com histórico esportivo, mídias e
+            informações relevantes. Marcas possuem perfis institucionais com
+            critérios claros de apoio.
           </p>
         </div>
+
         <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
           <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <MessageCircle className="w-5 h-5" /> Sistema de Match e Comunicação
+            <MessageCircle className="w-5 h-5" /> Comunicação Segura
           </h3>
           <p className="text-muted-foreground">
-            Contato só ocorre após interesse mútuo, promovendo segurança e foco
-            nas conexões realmente relevantes.
+            Sistema de mensagens integrado ao perfil do atleta, garantindo
+            rastreabilidade, segurança e contexto nas negociações.
+          </p>
+        </div>
+
+        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
+          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+            <Languages className="w-5 h-5" /> Tradução Simultânea
+          </h3>
+          <p className="text-muted-foreground">
+            Tradução automática bidirecional em tempo real no chat, permitindo
+            comunicação fluida entre atletas brasileiros e marcas
+            internacionais, sem barreiras linguísticas.
           </p>
         </div>
       </div>
@@ -127,54 +145,28 @@ const Sobre = () => {
             histórico de forma rápida e precisa.
           </p>
         </div>
+
         <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
           <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Handshake className="w-5 h-5" /> Gestão de Propostas e Acordos
+            <Handshake className="w-5 h-5" /> Gestão de Propostas
           </h3>
           <p className="text-muted-foreground">
             Ferramentas para formalizar patrocínios e registrar parcerias com
             clareza e segurança.
           </p>
         </div>
+
         <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
           <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <SlidersHorizontal className="w-5 h-5" /> Onboarding Progressivo
+            <LineChart className="w-5 h-5" /> Analytics
           </h3>
           <p className="text-muted-foreground">
-            Cadastro guiado com feedback visual e etapas claras, facilitando a
-            entrada na plataforma.
-          </p>
-        </div>
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <LineChart className="w-5 h-5" /> Analytics e Relatórios
-          </h3>
-          <p className="text-muted-foreground">
-            Insights sobre desempenho e ROI de parcerias esportivas, com base em
-            dados reais.
-          </p>
-        </div>
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Newspaper className="w-5 h-5" /> Notícias e Eventos
-          </h3>
-          <p className="text-muted-foreground">
-            Divulgação de conquistas, oportunidades de patrocínio e eventos
-            esportivos relevantes.
-          </p>
-        </div>
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Languages className="w-5 h-5" /> Tradutor de Idiomas
-          </h3>
-          <p className="text-muted-foreground">
-            Tradução automática bidirecional para facilitar o diálogo entre
-            atletas e marcas estrangeiras.
+            Relatórios e métricas para análise de desempenho e retorno de
+            investimento em patrocínios.
           </p>
         </div>
       </div>
 
-      {/* Botão de retorno */}
       <div className="mt-12 text-center">
         <Link to="/">
           <Button variant="outline">← Voltar para a Página Inicial</Button>
