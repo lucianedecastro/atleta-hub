@@ -31,10 +31,11 @@ api.interceptors.response.use(
     if (axios.isAxiosError(error) && error.response) {
       const { status } = error.response;
 
-      if ((status === 401 || status === 403) &&
-          typeof window !== 'undefined' &&
-          !window.location.pathname.includes('/auth')) {
-
+      if (
+        (status === 401 || status === 403) &&
+        typeof window !== 'undefined' &&
+        !window.location.pathname.includes('/auth')
+      ) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
 
@@ -48,6 +49,30 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// ==================================================
+// ===================== HEALTH =====================
+// ==================================================
+
+/**
+ * Endpoint simples para "acordar" o backend no Render (cold start)
+ */
+const health = {
+  ping: () => api.get('/health'),
+};
+
+/**
+ * Função utilitária para ser usada antes de login/registro
+ * Evita erro de cold start em UX crítica
+ */
+export const wakeUpApi = async () => {
+  try {
+    await health.ping();
+    console.log('Backend acordado com sucesso 🟢');
+  } catch (error) {
+    console.warn('Falha ao acordar backend (seguindo fluxo mesmo assim)');
+  }
+};
 
 // ==================================================
 // ===================== DTOs =======================
@@ -101,8 +126,7 @@ export interface UserDetailsResponse {
   dataNascimento?: string | null;
   telefoneContato?: string | null;
   midiakitUrl?: string | null;
-  // --- NOVO CAMPO: LOGO DA MARCA ---
-  logoUrl?: string | null; 
+  logoUrl?: string | null;
 }
 
 // -------- Profile --------
@@ -129,7 +153,6 @@ export interface UpdateMarcaProfileRequest {
   atletasPatrocinados?: string | null;
   tipoInvestimento?: string | null;
   redesSocial?: string | null;
-  // --- NOVO CAMPO: LOGO DA MARCA ---
   logoUrl?: string | null;
 }
 
@@ -233,20 +256,22 @@ const profile = {
 // 📸 Módulo Vitrine
 const vitrine = {
   getMyVitrine: () => api.get<VitrineResponse>('/vitrine/me'),
-  getVitrineByUserId: (userId: number) => api.get<VitrineResponse>(`/vitrine/${userId}`),
-  updateVitrine: (data: VitrineResponse) => api.put<VitrineResponse>('/vitrine', data),
-  
+  getVitrineByUserId: (userId: number) =>
+    api.get<VitrineResponse>(`/vitrine/${userId}`),
+  updateVitrine: (data: VitrineResponse) =>
+    api.put<VitrineResponse>('/vitrine', data),
+
   uploadMidia: (file: File, tipo: 'FOTO' | 'VIDEO') => {
     const formData = new FormData();
     formData.append('arquivo', file);
     formData.append('tipo', tipo);
-    
+
     return api.post<VitrineResponse>('/vitrine/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-  }
+  },
 };
 
 const interests = {

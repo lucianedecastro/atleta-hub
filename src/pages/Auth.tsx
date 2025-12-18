@@ -42,7 +42,7 @@ interface AuthFormData {
   tipoUsuario: UserType;
   cidade: string;
   estado: string;
-  idioma: string; // --- CAMPO NOVO ---
+  idioma: string;
 }
 
 interface ErrorResponse {
@@ -56,7 +56,7 @@ const initialFormData: AuthFormData = {
   tipoUsuario: UserType.Atleta,
   cidade: "",
   estado: "",
-  idioma: "pt", // --- PADRÃO NOVO ---
+  idioma: "pt",
 };
 
 export default function Auth() {
@@ -72,6 +72,20 @@ export default function Auth() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const { login } = useAuth();
+
+  /* =====================================================
+     🩺 HEALTH CHECK (ACORDA O BACKEND NO RENDER)
+     ===================================================== */
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/health`)
+      .then(() => {
+        console.info("🩺 Backend acordado (health check OK)");
+      })
+      .catch(() => {
+        console.warn("🩺 Falha no health check (backend ainda dormindo)");
+      });
+  }, []);
+  /* ===================================================== */
 
   useEffect(() => {
     const newMode =
@@ -99,7 +113,6 @@ export default function Auth() {
     }));
   }, []);
 
-  // --- NOVO HANDLER PARA IDIOMA ---
   const handleIdiomaChange = useCallback((value: string) => {
     setFormData((prev) => ({ ...prev, idioma: value }));
   }, []);
@@ -110,7 +123,6 @@ export default function Auth() {
 
       try {
         if (mode === AuthMode.Register) {
-          // 🔒 Validações obrigatórias
           if (
             !formData.nome ||
             !formData.email ||
@@ -138,18 +150,15 @@ export default function Auth() {
 
           setIsLoading(true);
 
-          // --- PAYLOAD ATUALIZADO ---
-          const payload = {
+          await auth.register({
             nome: formData.nome,
             email: formData.email,
             senha: formData.senha,
             tipoUsuario: formData.tipoUsuario,
             cidade: formData.cidade,
             estado: formData.estado,
-            idioma: formData.idioma, // --- ENVIANDO IDIOMA ---
-          };
-
-          await auth.register(payload);
+            idioma: formData.idioma,
+          });
 
           toast({
             title: "Cadastro realizado!",
@@ -221,93 +230,49 @@ export default function Auth() {
                 <>
                   <div>
                     <Label htmlFor="nome">Nome</Label>
-                    <Input
-                      id="nome"
-                      name="nome"
-                      value={formData.nome}
-                      onChange={handleInputChange}
-                    />
+                    <Input id="nome" name="nome" value={formData.nome} onChange={handleInputChange} />
                   </div>
 
                   <div>
                     <Label htmlFor="cidade">Cidade</Label>
-                    <Input
-                      id="cidade"
-                      name="cidade"
-                      value={formData.cidade}
-                      onChange={handleInputChange}
-                    />
+                    <Input id="cidade" name="cidade" value={formData.cidade} onChange={handleInputChange} />
                   </div>
 
                   <div>
                     <Label htmlFor="estado">Estado</Label>
-                    <Input
-                      id="estado"
-                      name="estado"
-                      value={formData.estado}
-                      onChange={handleInputChange}
-                    />
+                    <Input id="estado" name="estado" value={formData.estado} onChange={handleInputChange} />
                   </div>
                 </>
               )}
 
               <div>
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
+                <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
               </div>
 
               <div>
                 <Label htmlFor="senha">Senha</Label>
-                <Input
-                  id="senha"
-                  name="senha"
-                  type="password"
-                  value={formData.senha}
-                  onChange={handleInputChange}
-                />
+                <Input id="senha" name="senha" type="password" value={formData.senha} onChange={handleInputChange} />
               </div>
 
               {mode === AuthMode.Register && (
                 <>
                   <div>
                     <Label>Tipo de usuário</Label>
-                    <Select
-                      value={formData.tipoUsuario}
-                      onValueChange={handleSelectChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
+                    <Select value={formData.tipoUsuario} onValueChange={handleSelectChange}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={UserType.Atleta}>
-                          Atleta
-                        </SelectItem>
-                        <SelectItem value={UserType.Marca}>
-                          Marca
-                        </SelectItem>
-                        <SelectItem value={UserType.Admin}>
-                          Admin
-                        </SelectItem>
+                        <SelectItem value={UserType.Atleta}>Atleta</SelectItem>
+                        <SelectItem value={UserType.Marca}>Marca</SelectItem>
+                        <SelectItem value={UserType.Admin}>Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {/* --- SELETOR DE IDIOMA (NOVO) --- */}
                   <div>
                     <Label>Idioma de preferência</Label>
-                    <Select
-                      value={formData.idioma}
-                      onValueChange={handleIdiomaChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione seu idioma" />
-                      </SelectTrigger>
+                    <Select value={formData.idioma} onValueChange={handleIdiomaChange}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pt">🇧🇷 Português</SelectItem>
                         <SelectItem value="en">🇺🇸 English</SelectItem>
@@ -316,36 +281,17 @@ export default function Auth() {
                     </Select>
                   </div>
 
-                  {/* 🔐 CONSENTIMENTO LGPD */}
                   <div className="flex items-start space-x-2 mt-2">
                     <Checkbox
                       id="terms"
                       checked={acceptedTerms}
-                      onCheckedChange={(value) =>
-                        setAcceptedTerms(Boolean(value))
-                      }
+                      onCheckedChange={(value) => setAcceptedTerms(Boolean(value))}
                     />
-                    <Label
-                      htmlFor="terms"
-                      className="text-sm text-muted-foreground"
-                    >
-                      Concordo com o uso dos meus dados de acordo com os{" "}
-                      <Link
-                        to="/termos"
-                        target="_blank"
-                        className="underline text-primary"
-                      >
-                        Termos de Uso
-                      </Link>{" "}
+                    <Label htmlFor="terms" className="text-sm text-muted-foreground">
+                      Concordo com os{" "}
+                      <Link to="/termos" target="_blank" className="underline text-primary">Termos</Link>{" "}
                       e a{" "}
-                      <Link
-                        to="/privacidade"
-                        target="_blank"
-                        className="underline text-primary"
-                      >
-                        Política de Privacidade
-                      </Link>
-                      .
+                      <Link to="/privacidade" target="_blank" className="underline text-primary">Política</Link>.
                     </Label>
                   </div>
                 </>
@@ -354,29 +300,12 @@ export default function Auth() {
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4">
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading
-                ? "Carregando..."
-                : mode === AuthMode.Login
-                ? "Entrar"
-                : "Cadastrar"}
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? "Carregando..." : mode === AuthMode.Login ? "Entrar" : "Cadastrar"}
             </Button>
 
-            <Link
-              to={`/auth?mode=${
-                mode === AuthMode.Login
-                  ? AuthMode.Register
-                  : AuthMode.Login
-              }`}
-              className="text-sm underline"
-            >
-              {mode === AuthMode.Login
-                ? "Criar conta"
-                : "Já tenho conta"}
+            <Link to={`/auth?mode=${mode === AuthMode.Login ? AuthMode.Register : AuthMode.Login}`} className="text-sm underline">
+              {mode === AuthMode.Login ? "Criar conta" : "Já tenho conta"}
             </Link>
 
             <Link to="/" className="text-sm underline">
