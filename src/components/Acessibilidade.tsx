@@ -87,7 +87,7 @@ export function Acessibilidade() {
   const inativo = "bg-background text-foreground hover:bg-secondary";
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 print:hidden">
+    <div className="fixed bottom-20 left-4 z-50 md:bottom-4 print:hidden">
       {aberto && (
         <div
           id="painel-acessibilidade"

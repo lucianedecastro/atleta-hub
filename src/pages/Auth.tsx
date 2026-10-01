@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
+import { Logo } from "@/components/Logo";
+import { LinhasQuadra } from "@/components/LinhasQuadra";
 import { useAuth } from "@/services/auth-context";
 import { auth, LoginRequest, wakeUpApi } from "@/services/apiService";
 import { getErrorMessage } from "@/lib/errors";
@@ -57,6 +59,11 @@ const initialFormData: AuthFormData = {
   idioma: "pt",
 };
 
+const TIPOS: { valor: UserType; rotulo: string }[] = [
+  { valor: UserType.Atleta, rotulo: "Atleta" },
+  { valor: UserType.Marca, rotulo: "Marca" },
+];
+
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -68,11 +75,11 @@ export default function Auth() {
   const [formData, setFormData] = useState<AuthFormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
   const { login } = useAuth();
 
   // Acorda o backend no Render assim que a tela abre (cold start).
-  // Antes usava VITE_API_BASE_URL (variável que não existe) e chamava "undefined/health".
   useEffect(() => {
     wakeUpApi();
   }, []);
@@ -85,6 +92,7 @@ export default function Auth() {
       setMode(newMode);
       setFormData(initialFormData);
       setAcceptedTerms(false);
+      setAcceptedPrivacy(false);
     }
   }, [searchParams, mode]);
 
@@ -96,11 +104,8 @@ export default function Auth() {
     []
   );
 
-  const handleSelectChange = useCallback((value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tipoUsuario: value as UserType,
-    }));
+  const handleTipoChange = useCallback((value: UserType) => {
+    setFormData((prev) => ({ ...prev, tipoUsuario: value }));
   }, []);
 
   const handleIdiomaChange = useCallback((value: string) => {
@@ -137,11 +142,11 @@ export default function Auth() {
             return;
           }
 
-          if (!acceptedTerms) {
+          if (!acceptedTerms || !acceptedPrivacy) {
             toast({
               title: "Consentimento obrigatório",
               description:
-                "Você precisa concordar com os Termos e a Política de Privacidade para continuar.",
+                "Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.",
               variant: "destructive",
             });
             return;
@@ -197,126 +202,170 @@ export default function Auth() {
         setIsLoading(false);
       }
     },
-    [mode, formData, acceptedTerms, login, navigate, isLoading]
+    [mode, formData, acceptedTerms, acceptedPrivacy, login, navigate, isLoading]
   );
 
+  const ehLogin = mode === AuthMode.Login;
+
   return (
-    <div className="flex justify-center items-center min-h-screen p-4 bg-gray-100 dark:bg-gray-900">
-      <Card className="w-full max-w-[400px]">
-        <form onSubmit={handleSubmit}>
-          <CardHeader>
-            <CardTitle role="heading" aria-level={1}>
-              {mode === AuthMode.Login ? "Login" : "Cadastro"}
-            </CardTitle>
-            <CardDescription>
-              {mode === AuthMode.Login
-                ? "Entre para acessar sua conta."
-                : "Crie sua conta gratuitamente."}
-            </CardDescription>
-          </CardHeader>
+    <div className="min-h-screen bg-background">
+      <div className="on-dark relative overflow-hidden bg-gradient-hero text-white">
+        <LinhasQuadra />
+        <div className="container relative z-10 pb-24 pt-6 sm:pb-28">
+          <Link to="/" aria-label="AtletaHub, página inicial" className="inline-block rounded-md">
+            <Logo variante="branco" classeNome="text-3xl" />
+          </Link>
+        </div>
+      </div>
 
-          <CardContent>
-            <div className="grid gap-4">
-              {mode === AuthMode.Register && (
-                <>
-                  <div>
-                    <Label htmlFor="nome">Nome</Label>
-                    <Input id="nome" name="nome" autoComplete="name" maxLength={100} value={formData.nome} onChange={handleInputChange} />
-                  </div>
+      <div className="container -mt-16 pb-10">
+        <Card className="mx-auto w-full max-w-md shadow-elegant">
+          <form onSubmit={handleSubmit} noValidate>
+            <CardHeader>
+              <CardTitle role="heading" aria-level={1} className="text-3xl">
+                {ehLogin ? "Entrar" : "Criar conta"}
+              </CardTitle>
+              <CardDescription className="text-base">
+                {ehLogin
+                  ? "Entre para acessar sua conta."
+                  : "Crie sua conta gratuitamente."}
+              </CardDescription>
+            </CardHeader>
 
-                  <div>
-                    <Label htmlFor="cidade">Cidade</Label>
-                    <Input id="cidade" name="cidade" autoComplete="address-level2" maxLength={100} value={formData.cidade} onChange={handleInputChange} />
-                  </div>
+            <CardContent>
+              <div className="grid gap-4">
+                {!ehLogin && (
+                  <>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="nome">Nome</Label>
+                      <Input id="nome" name="nome" autoComplete="name" maxLength={100} value={formData.nome} onChange={handleInputChange} />
+                    </div>
 
-                  <div>
-                    <Label htmlFor="estado">Estado</Label>
-                    <Input id="estado" name="estado" autoComplete="address-level1" maxLength={100} value={formData.estado} onChange={handleInputChange} />
-                  </div>
-                </>
-              )}
+                    <div className="grid grid-cols-[1fr_6rem] gap-3">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="cidade">Cidade</Label>
+                        <Input id="cidade" name="cidade" autoComplete="address-level2" maxLength={100} value={formData.cidade} onChange={handleInputChange} />
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="estado">Estado</Label>
+                        <Input id="estado" name="estado" autoComplete="address-level1" maxLength={100} value={formData.estado} onChange={handleInputChange} />
+                      </div>
+                    </div>
+                  </>
+                )}
 
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" maxLength={100} value={formData.email} onChange={handleInputChange} />
-              </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" maxLength={100} value={formData.email} onChange={handleInputChange} />
+                </div>
 
-              <div>
-                <Label htmlFor="senha">Senha</Label>
-                <Input
-                  id="senha"
-                  name="senha"
-                  type="password"
-                  autoComplete={mode === AuthMode.Login ? "current-password" : "new-password"}
-                  maxLength={72}
-                  value={formData.senha}
-                  onChange={handleInputChange}
-                />
-                {mode === AuthMode.Register && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Mínimo de {SENHA_MINIMA} caracteres.
-                  </p>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="senha">Senha</Label>
+                  <Input
+                    id="senha"
+                    name="senha"
+                    type="password"
+                    autoComplete={ehLogin ? "current-password" : "new-password"}
+                    maxLength={72}
+                    value={formData.senha}
+                    onChange={handleInputChange}
+                    aria-describedby={ehLogin ? undefined : "dica-senha"}
+                  />
+                  {!ehLogin && (
+                    <p id="dica-senha" className="text-sm text-muted-foreground">
+                      Mínimo de {SENHA_MINIMA} caracteres.
+                    </p>
+                  )}
+                </div>
+
+                {!ehLogin && (
+                  <>
+                    <fieldset className="grid gap-1.5">
+                      <legend className="mb-1.5 text-sm font-bold">Eu sou</legend>
+                      <div className="grid grid-cols-2 gap-3">
+                        {TIPOS.map(({ valor, rotulo }) => (
+                          <label key={valor} className="relative cursor-pointer">
+                            <input
+                              type="radio"
+                              name="tipoUsuario"
+                              value={valor}
+                              checked={formData.tipoUsuario === valor}
+                              onChange={() => handleTipoChange(valor)}
+                              className="peer sr-only"
+                            />
+                            <span className="flex min-h-12 items-center justify-center rounded-xl border-2 border-input bg-card px-4 font-bold transition-colors peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring">
+                              {rotulo}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="idioma">Idioma de preferência</Label>
+                      <Select value={formData.idioma} onValueChange={handleIdiomaChange}>
+                        <SelectTrigger id="idioma"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pt">Português</SelectItem>
+                          <SelectItem value="en" lang="en">English</SelectItem>
+                          <SelectItem value="es" lang="es">Español</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-1">
+                      <div className="flex min-h-11 items-center gap-3">
+                        <Checkbox
+                          id="terms"
+                          checked={acceptedTerms}
+                          onCheckedChange={(value) => setAcceptedTerms(Boolean(value))}
+                          className="h-6 w-6"
+                        />
+                        <Label htmlFor="terms" className="text-base font-medium leading-snug">
+                          Li e aceito os{" "}
+                          <Link to="/termos" target="_blank" className="font-bold text-primary underline">
+                            Termos de Uso
+                          </Link>
+                        </Label>
+                      </div>
+                      <div className="flex min-h-11 items-center gap-3">
+                        <Checkbox
+                          id="privacy"
+                          checked={acceptedPrivacy}
+                          onCheckedChange={(value) => setAcceptedPrivacy(Boolean(value))}
+                          className="h-6 w-6"
+                        />
+                        <Label htmlFor="privacy" className="text-base font-medium leading-snug">
+                          Li e concordo com a{" "}
+                          <Link to="/privacidade" target="_blank" className="font-bold text-primary underline">
+                            Política de Privacidade
+                          </Link>
+                        </Label>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
+            </CardContent>
 
-              {mode === AuthMode.Register && (
-                <>
-                  <div>
-                    <Label htmlFor="tipoUsuario">Tipo de usuário</Label>
-                    <Select value={formData.tipoUsuario} onValueChange={handleSelectChange}>
-                      <SelectTrigger id="tipoUsuario"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={UserType.Atleta}>Atleta</SelectItem>
-                        <SelectItem value={UserType.Marca}>Marca</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" variant="cta" size="lg" disabled={isLoading} className="w-full">
+                {isLoading ? "Carregando..." : ehLogin ? "Entrar" : "Criar conta"}
+              </Button>
 
-                  <div>
-                    <Label htmlFor="idioma">Idioma de preferência</Label>
-                    <Select value={formData.idioma} onValueChange={handleIdiomaChange}>
-                      <SelectTrigger id="idioma"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pt">🇧🇷 Português</SelectItem>
-                        <SelectItem value="en">🇺🇸 English</SelectItem>
-                        <SelectItem value="es">🇪🇸 Español</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-start space-x-2 mt-2">
-                    <Checkbox
-                      id="terms"
-                      checked={acceptedTerms}
-                      onCheckedChange={(value) => setAcceptedTerms(Boolean(value))}
-                    />
-                    <Label htmlFor="terms" className="text-sm text-muted-foreground">
-                      Concordo com os{" "}
-                      <Link to="/termos" target="_blank" className="underline text-primary">Termos</Link>{" "}
-                      e a{" "}
-                      <Link to="/privacidade" target="_blank" className="underline text-primary">Política</Link>.
-                    </Label>
-                  </div>
-                </>
-              )}
-            </div>
-          </CardContent>
-
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Carregando..." : mode === AuthMode.Login ? "Entrar" : "Cadastrar"}
-            </Button>
-
-            <Link to={`/auth?mode=${mode === AuthMode.Login ? AuthMode.Register : AuthMode.Login}`} className="text-sm underline">
-              {mode === AuthMode.Login ? "Criar conta" : "Já tenho conta"}
-            </Link>
-
-            <Link to="/" className="text-sm underline">
-              ← Voltar para a página inicial
-            </Link>
-          </CardFooter>
-        </form>
-      </Card>
+              <p className="text-center text-base text-muted-foreground">
+                {ehLogin ? "Ainda não tem conta? " : "Já tem conta? "}
+                <Link
+                  to={`/auth?mode=${ehLogin ? AuthMode.Register : AuthMode.Login}`}
+                  className="font-bold text-primary underline"
+                >
+                  {ehLogin ? "Criar conta" : "Entrar"}
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 }

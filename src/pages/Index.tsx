@@ -1,184 +1,221 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
-import {
-  Heart,
-  Users,
-  MessageCircle,
-  TrendingUp
-} from "lucide-react";
-import heroImage from "@/assets/hero-image.jpg";
-
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Heart, Users, MessageCircle, TrendingUp } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { LinhasQuadra } from "@/components/LinhasQuadra";
 import { Footer } from "@/components/Footer";
 
 const featuresData = [
   {
     id: "match-system",
-    icon: <Heart className="w-8 h-8 text-match" aria-hidden="true" />,
+    icon: Heart,
     title: "Sistema de Match",
-    description: "Conecte-se apenas com quem tem interesse mútuo"
+    description: "Conecte-se apenas com quem tem interesse mútuo",
+    destaque: false,
   },
   {
     id: "athletes-brands",
-    icon: <Users className="w-8 h-8 text-accent" aria-hidden="true" />,
+    icon: Users,
     title: "Atletas e Marcas",
-    description: "Plataforma para atletas e marcas se conectarem"
+    description: "Plataforma para atletas e marcas se conectarem",
+    destaque: true,
   },
   {
     id: "secure-communication",
-    icon: <MessageCircle className="w-8 h-8 text-primary" aria-hidden="true" />,
+    icon: MessageCircle,
     title: "Comunicação Segura",
-    description: "Chat liberado apenas após match confirmado"
+    description: "Chat liberado apenas após match confirmado",
+    destaque: false,
   },
   {
     id: "growth-potential",
-    icon: <TrendingUp className="w-8 h-8 text-primary-glow" aria-hidden="true" />,
+    icon: TrendingUp,
     title: "Crescimento",
-    description: "Potencialize sua carreira ou encontre talentos"
-  }
+    description: "Potencialize sua carreira ou encontre talentos",
+    destaque: true,
+  },
+];
+
+const passos = [
+  { titulo: "Cadastre-se", texto: "Crie seu perfil como atleta ou marca" },
+  { titulo: "Explore", texto: "Veja perfis e demonstre interesse" },
+  { titulo: "Conecte-se", texto: "Converse apenas com matches confirmados" },
 ];
 
 const Index = () => {
   return (
     <div className="flex flex-col">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-hero text-white flex flex-col overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img
-            src={heroImage}
-            alt="Atletas e marcas se conectando no AtletaHub"
-            className="w-full h-full object-cover opacity-30"
-          />
-          <div className="absolute inset-0 bg-gradient-hero/80" />
-        </div>
+      {/* Hero */}
+      <section className="on-dark relative overflow-hidden bg-gradient-hero text-white">
+        <LinhasQuadra />
 
-        <header className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center container mx-auto">
-          <Link to="/sobre" className="font-bold text-xl text-white" aria-label="Sobre o AtletaHub - Informações sobre a aplicação">
-            Sobre o AtletaHub
+        <header className="container relative z-10 flex items-center justify-between py-4">
+          <Link to="/" aria-label="AtletaHub, página inicial" className="rounded-md">
+            <Logo variante="branco" classeNome="text-2xl" />
           </Link>
-          <nav aria-label="Navegação Principal">
-            <ul className="flex space-x-4">
+          <nav aria-label="Navegação principal">
+            <ul className="flex items-center gap-1">
               <li>
-                <Link to="/auth?mode=login">
-                  <Button variant="link" className="text-white hover:text-gray-300">
-                    Login
-                  </Button>
+                <Link
+                  to="/sobre"
+                  className="inline-flex min-h-11 items-center rounded-md px-3 font-bold hover:underline"
+                >
+                  Sobre
                 </Link>
               </li>
               <li>
-                <Link to="/auth?mode=register">
-                  <Button variant="link" className="text-white hover:text-gray-300">
-                    Registrar
-                  </Button>
+                <Link
+                  to="/auth?mode=login"
+                  className="inline-flex min-h-11 items-center rounded-md px-3 font-bold hover:underline"
+                >
+                  Entrar
                 </Link>
               </li>
             </ul>
           </nav>
         </header>
 
-        <div className="container mx-auto text-center px-4 relative z-10 flex flex-col justify-center items-center pt-32 pb-20">
-          <h1 className="text-6xl font-bold mb-6">AtletaHub</h1>
-          <p className="text-2xl mb-8 max-w-2xl mx-auto">
+        <div className="container relative z-10 pb-20 pt-16 md:pb-32 md:pt-24">
+          <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
+            Atletas e marcas em jogo juntos
+          </h1>
+          <p className="mt-5 max-w-xl text-lg text-white/90 sm:text-xl">
             A plataforma que conecta atletas e marcas através de um sistema inteligente de match
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/auth?mode=register">
-              <Button size="lg" variant="hero">
-                Começar Agora
-              </Button>
-            </Link>
-            <Link to="/auth?mode=login">
-              <Button size="lg" variant="link" className="text-white hover:text-gray-300">
-                Já tenho conta
-              </Button>
-            </Link>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button asChild size="lg" variant="hero">
+              <Link to="/auth?mode=register">Começar agora</Link>
+            </Button>
+            <Button asChild size="lg" variant="link" className="text-white">
+              <Link to="/auth?mode=login">Já tenho conta</Link>
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-secondary/50" aria-labelledby="features-heading">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 id="features-heading" className="text-4xl font-bold mb-4">Como funciona</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+      {/* Como funciona */}
+      <section className="py-16 md:py-20" aria-labelledby="features-heading">
+        <div className="container">
+          <div className="mb-10 max-w-2xl">
+            <h2 id="features-heading" className="text-3xl font-extrabold tracking-tight md:text-4xl">
+              Como funciona
+            </h2>
+            <p className="mt-3 text-lg text-muted-foreground">
               Nossa plataforma conecta atletas e marcas de forma inteligente e segura
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {featuresData.map((feature) => (
-              <Card key={feature.id} className="text-center hover:shadow-elegant transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-center mb-4">
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {featuresData.map(({ id, icon: Icone, title, description, destaque }) => (
+              <li key={id}>
+                <Card className="h-full">
+                  <CardHeader>
+                    <div
+                      className={
+                        "mb-2 flex h-14 w-14 items-center justify-center rounded-full " +
+                        (destaque ? "bg-cta text-cta-foreground" : "bg-primary text-primary-foreground")
+                      }
+                    >
+                      <Icone className="h-7 w-7" aria-hidden="true" />
+                    </div>
+                    <CardTitle className="text-xl">{title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{description}</p>
+                  </CardContent>
+                </Card>
+              </li>
             ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Chat com tradução */}
+      <section className="py-16 md:py-20" aria-labelledby="traducao-heading">
+        <div className="container grid items-center gap-10 md:grid-cols-2">
+          <div>
+            <h2 id="traducao-heading" className="text-3xl font-extrabold tracking-tight md:text-4xl">
+              Chat com tradução
+            </h2>
+            <p className="mt-3 max-w-xl text-lg text-muted-foreground">
+              Atletas e marcas de países diferentes conversam cada um no seu idioma. Em qualquer mensagem
+              recebida, toque em Traduzir e leia em português ou inglês.
+            </p>
+          </div>
+
+          {/* Exemplo ilustrativo de como aparece no chat */}
+          <div aria-hidden="true" className="mx-auto flex w-full max-w-sm flex-col gap-3 rounded-2xl border-2 border-primary bg-card p-4">
+            <div className="max-w-[85%] self-start rounded-2xl rounded-bl-sm border-2 border-primary bg-card px-4 py-3">
+              <p lang="en">Hi Camila! We loved your profile. Shall we talk about sponsorship?</p>
+            </div>
+            <div className="max-w-[85%] self-start rounded-2xl rounded-bl-sm bg-secondary px-4 py-3">
+              <p>Oi, Camila! Adoramos seu perfil. Vamos conversar sobre patrocínio?</p>
+              <p className="mt-1 text-sm font-bold text-primary">Traduzido do inglês</p>
+            </div>
+            <div className="max-w-[85%] self-end rounded-2xl rounded-br-sm bg-primary px-4 py-3 text-primary-foreground">
+              <p>Oi! Que ótimo, tenho muito interesse.</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Process Section */}
-      <section className="py-20" aria-labelledby="process-heading">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 id="process-heading" className="text-4xl font-bold mb-4">Processo simples</h2>
-            <p className="text-xl text-muted-foreground">
+      {/* Processo simples */}
+      <section className="bg-secondary py-16 md:py-20" aria-labelledby="process-heading">
+        <div className="container">
+          <div className="mb-10 max-w-2xl">
+            <h2 id="process-heading" className="text-3xl font-extrabold tracking-tight md:text-4xl">
+              Processo simples
+            </h2>
+            <p className="mt-3 text-lg text-muted-foreground">
               Em 3 passos você pode começar a fazer conexões
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {["Cadastre-se", "Explore", "Conecte-se"].map((step, index) => (
-              <div key={index} className="text-center">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 ${
-                  index === 0 ? "bg-primary text-primary-foreground"
-                  : index === 1 ? "bg-accent text-accent-foreground"
-                  : "bg-match text-match-foreground"
-                }`}>
+          <ol className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {passos.map((passo, index) => (
+              <li
+                key={passo.titulo}
+                className="flex items-center gap-4 rounded-2xl border-2 border-primary bg-card p-4"
+              >
+                <span
+                  aria-hidden="true"
+                  className={
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xl font-extrabold " +
+                    (index === 2 ? "bg-cta text-cta-foreground" : "bg-primary text-primary-foreground")
+                  }
+                >
                   {index + 1}
+                </span>
+                <div>
+                  <h3 className="text-xl font-extrabold">
+                    <span className="sr-only">Passo {index + 1}: </span>
+                    {passo.titulo}
+                  </h3>
+                  <p className="text-muted-foreground">{passo.texto}</p>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{step}</h3>
-                <p className="text-muted-foreground">
-                  {index === 0
-                    ? "Crie seu perfil como atleta ou marca"
-                    : index === 1
-                    ? "Veja perfis e demonstre interesse"
-                    : "Converse apenas com matches confirmados"}
-                </p>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-primary text-white" aria-labelledby="cta-heading">
-        <div className="container mx-auto text-center px-4">
-          <h2 id="cta-heading" className="text-4xl font-bold mb-4">Pronto para começar?</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
+      {/* CTA */}
+      <section className="on-dark relative overflow-hidden bg-gradient-hero py-16 text-white md:py-20" aria-labelledby="cta-heading">
+        <LinhasQuadra />
+        <div className="container relative z-10 text-center">
+          <h2 id="cta-heading" className="text-3xl font-extrabold tracking-tight md:text-4xl">
+            Pronto para começar?
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-lg text-white/90 md:text-xl">
             Crie seu perfil e comece a se conectar com atletas e marcas no AtletaHub
           </p>
-          <Link to="/auth?mode=register">
-            <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-              Criar Conta Gratuita
-            </Button>
-          </Link>
+          <Button asChild size="lg" variant="hero" className="mt-8">
+            <Link to="/auth?mode=register">Criar conta gratuita</Link>
+          </Button>
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
