@@ -3,21 +3,29 @@ import { Link } from "react-router-dom";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
-  const developerName = "Luciane de Castro"; 
-  const developerEmail = "luciane.castro@gmail.com"; 
-  const developerInstagram = "https://instagram.com/atletahubapp"; 
+  const developerName = "Luciane de Castro";
+  const developerEmail = "luciane.castro@gmail.com";
+  const developerInstagram = "https://instagram.com/atletahubapp";
   const inpiNumber = "BR512025004065-2";
 
   return (
     <footer className="w-full bg-secondary text-secondary-foreground py-6 px-4">
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center text-center md:text-left">
-        
+
         {/* Direitos Autorais */}
         <div className="mb-4 md:mb-0">
           <p className="text-sm">
             &copy; {currentYear} AtletaHub. Todos os direitos reservados. <br />
             Software AtletaHub - Registrado no INPI sob o nº {inpiNumber}.
           </p>
+          <nav aria-label="Documentos legais" className="mt-2 flex justify-center md:justify-start gap-4 text-sm">
+            <Link to="/termos" className="underline hover:text-primary transition-colors">
+              Termos de Uso
+            </Link>
+            <Link to="/privacidade" className="underline hover:text-primary transition-colors">
+              Política de Privacidade
+            </Link>
+          </nav>
         </div>
 
         {/* Informações do Desenvolvedor */}
@@ -33,6 +41,7 @@ export function Footer() {
             href={`mailto:${developerEmail}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="Enviar e-mail"
             className="text-muted-foreground hover:text-primary transition-colors"
           >
             <Mail className="w-5 h-5" />
