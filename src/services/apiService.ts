@@ -127,6 +127,8 @@ export interface UserDetailsResponse {
   posicao?: string | null;
   midiakitUrl?: string | null;
   logoUrl?: string | null;
+  // Foto do atleta ou logo da marca (use este campo para exibir)
+  fotoUrl?: string | null;
 }
 
 // -------- Perfil (dados completos, só do próprio usuário) --------
@@ -222,6 +224,7 @@ export interface MatchResponse {
   nomeUsuarioA: string;
   nomeUsuarioB: string;
   nomeOutroUsuario: string;
+  fotoOutroUsuario?: string | null;
   tipoMatch: 'RECIPROCO' | 'SUPER_MATCH';
   dataMatch: string;
 }
@@ -281,6 +284,17 @@ const profile = {
   getMarcaProfile: () => api.get<PerfilMarcaResponse>('/perfil/marca'),
   updateMarcaProfile: (data: UpdateMarcaProfileRequest) =>
     api.put<PerfilMarcaResponse>('/perfil/marca', data),
+
+  // Foto do atleta / logo da marca: o servidor já grava no perfil (não precisa clicar em Salvar).
+  uploadFoto: (file: File) => {
+    const formData = new FormData();
+    formData.append('arquivo', file);
+    return api.post<{ fotoUrl: string }>('/perfil/foto', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    });
+  },
+  removerFoto: () => api.delete<void>('/perfil/foto'),
 };
 
 // 📸 Módulo Vitrine

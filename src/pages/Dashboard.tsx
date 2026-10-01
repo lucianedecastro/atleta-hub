@@ -22,6 +22,7 @@ import {
   InteresseRequest,
 } from "@/services/apiService";
 import { getErrorMessage } from "@/lib/errors";
+import { UserAvatar } from "@/components/UserAvatar";
 import axios from "axios";
 
 // Enums para tipos de usuário
@@ -184,8 +185,9 @@ export default function Dashboard() {
                   <li key={match.id}>
                     <Link
                       to={`/chat/${match.id}`}
-                      className="text-primary hover:underline"
+                      className="flex items-center gap-3 text-primary hover:underline"
                     >
+                      <UserAvatar nome={match.nomeOutroUsuario} url={match.fotoOutroUsuario} size="sm" />
                       {match.nomeOutroUsuario}
                     </Link>
                   </li>
@@ -203,11 +205,21 @@ export default function Dashboard() {
           profiles.map((profile) => (
             <Card key={profile.id}>
               <CardHeader>
-                <CardTitle>{profile.nome}</CardTitle>
-                <CardDescription>
-                  {profile.tipoUsuario === UserType.ATLETA ? "Atleta" : "Marca"}
-                  {profile.cidade ? ` · ${profile.cidade}${profile.estado ? `/${profile.estado}` : ""}` : ""}
-                </CardDescription>
+                <div className="flex items-center gap-4">
+                  <UserAvatar
+                    nome={profile.nome}
+                    url={profile.fotoUrl}
+                    tipo={profile.tipoUsuario}
+                    size="lg"
+                  />
+                  <div className="min-w-0">
+                    <CardTitle className="truncate">{profile.nome}</CardTitle>
+                    <CardDescription>
+                      {profile.tipoUsuario === UserType.ATLETA ? "Atleta" : "Marca"}
+                      {profile.cidade ? ` · ${profile.cidade}${profile.estado ? `/${profile.estado}` : ""}` : ""}
+                    </CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 {profile.tipoUsuario === UserType.ATLETA ? (

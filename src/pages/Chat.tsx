@@ -17,6 +17,7 @@ import {
   MatchResponse,
 } from "@/services/apiService";
 import { getErrorMessage } from "@/lib/errors";
+import { UserAvatar } from "@/components/UserAvatar";
 
 interface Message {
   id: number;
@@ -212,9 +213,10 @@ export default function Chat() {
               <Button
                 key={match.id}
                 variant={matchSelecionado?.id === match.id ? "default" : "outline"}
-                className="justify-start"
+                className="justify-start gap-2"
                 onClick={() => navigate(`/chat/${match.id}`)}
               >
+                <UserAvatar nome={match.nomeOutroUsuario} url={match.fotoOutroUsuario} size="sm" />
                 {match.nomeOutroUsuario}
               </Button>
             ))
@@ -232,7 +234,14 @@ export default function Chat() {
               ← Conversas
             </Button>
           </div>
-          <CardTitle>
+          <CardTitle className="flex items-center gap-3">
+            {matchSelecionado && (
+              <UserAvatar
+                nome={matchSelecionado.nomeOutroUsuario}
+                url={matchSelecionado.fotoOutroUsuario}
+                size="sm"
+              />
+            )}
             {matchSelecionado
               ? `Chat com ${matchSelecionado.nomeOutroUsuario}`
               : "Selecione uma conversa"}

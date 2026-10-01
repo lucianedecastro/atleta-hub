@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/services/auth-context";
 import {
@@ -23,6 +23,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { UserAvatar } from "@/components/UserAvatar";
+import { reduzirImagem } from "@/lib/imagem";
 
 // Limites iguais aos do servidor
 const LIMITE_FOTO_MB = 10;
@@ -57,6 +59,8 @@ interface PerfilForm {
   atletasPatrocinados?: string | null;
   tipoInvestimento?: string | null;
   logoUrl?: string | null;
+  // Foto do atleta ou logo da marca (campo único de imagem de perfil)
+  fotoUrl?: string | null;
 }
 
 interface FieldConfig {
@@ -190,67 +194,87 @@ const ProfileFields = ({
   );
 };
 
-// --- LOGO (MARCAS) ---
-const LogoUploadSection = ({
-  logoUrl,
-  isEditing,
-  onLogoUpdate,
+// --- FOTO DE PERFIL (atleta) / LOGO (marca) ---
+// Salva na hora: o servidor grava no perfil, sem depender do botão "Salvar".
+const FotoPerfilSection = ({
+  nome,
+  tipo,
+  fotoUrl,
+  isMyProfile,
+  onChange,
 }: {
-  logoUrl?: string | null;
-  isEditing: boolean;
-  onLogoUpdate: (url: string) => void;
+  nome: string;
+  tipo: "ATLETA" | "MARCA";
+  fotoUrl?: string | null;
+  isMyProfile: boolean;
+  onChange: (url: string | null) => void;
 }) => {
-  const [uploading, setUploading] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const rotulo = tipo === "ATLETA" ? "foto" : "logo";
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleArquivo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const original = e.target.files?.[0];
+    e.target.value = "";
+    if (!original) return;
 
-    if (file.size > LIMITE_FOTO_MB * 1024 * 1024) {
-      toast({ title: "Arquivo muito grande", description: `Limite: ${LIMITE_FOTO_MB}MB.`, variant: "destructive" });
-      e.target.value = "";
+    if (!original.type.startsWith("image/")) {
+      toast({ title: "Arquivo inválido", description: "Escolha uma imagem (JPG, PNG ou WEBP).", variant: "destructive" });
       return;
     }
 
     try {
-      setUploading(true);
-      const response = await vitrineApi.uploadMidia(file, "FOTO");
-      if (response.data.fotos && response.data.fotos.length > 0) {
-        const newLogoUrl = response.data.fotos[response.data.fotos.length - 1];
-        onLogoUpdate(newLogoUrl);
-        toast({ title: "Logo atualizada!", description: "Não esqueça de salvar o perfil." });
+      setEnviando(true);
+      const arquivo = await reduzirImagem(original);
+      if (arquivo.size > 5 * 1024 * 1024) {
+        toast({ title: "Imagem muito grande", description: "Limite: 5MB.", variant: "destructive" });
+        return;
       }
+      const resp = await profileApi.uploadFoto(arquivo);
+      onChange(resp.data.fotoUrl);
+      toast({ title: tipo === "ATLETA" ? "Foto atualizada!" : "Logo atualizada!" });
     } catch (error) {
-      toast({ title: "Erro no upload", description: getErrorMessage(error), variant: "destructive" });
+      toast({ title: "Erro no envio", description: getErrorMessage(error, "Não foi possível enviar a imagem."), variant: "destructive" });
     } finally {
-      setUploading(false);
-      e.target.value = "";
+      setEnviando(false);
+    }
+  };
+
+  const handleRemover = async () => {
+    try {
+      setEnviando(true);
+      await profileApi.removerFoto();
+      onChange(null);
+      toast({ title: tipo === "ATLETA" ? "Foto removida." : "Logo removida." });
+    } catch (error) {
+      toast({ title: "Não foi possível remover", description: getErrorMessage(error), variant: "destructive" });
+    } finally {
+      setEnviando(false);
     }
   };
 
   return (
     <div className="flex flex-col items-center mb-6">
-      <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
-        {logoUrl ? (
-          <img src={logoUrl} alt="Logo da Marca" className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-4xl text-gray-400">🏢</span>
-        )}
-      </div>
+      <UserAvatar nome={nome} url={fotoUrl} tipo={tipo} size="xl" />
 
-      {isEditing && (
-        <div className="mt-2">
-          <Label htmlFor="logo-upload" className="cursor-pointer text-sm text-blue-600 hover:underline">
-            {uploading ? "Enviando..." : "Alterar Logo"}
-            <Input
-              id="logo-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleLogoUpload}
-              disabled={uploading}
-            />
-          </Label>
+      {isMyProfile && (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            className="hidden"
+            onChange={handleArquivo}
+            disabled={enviando}
+          />
+          <Button type="button" variant="outline" size="sm" disabled={enviando} onClick={() => inputRef.current?.click()}>
+            {enviando ? "Enviando..." : fotoUrl ? `Trocar ${rotulo}` : `Adicionar ${rotulo}`}
+          </Button>
+          {fotoUrl && !enviando && (
+            <Button type="button" variant="ghost" size="sm" onClick={handleRemover}>
+              Remover
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -403,6 +427,7 @@ export default function Profile() {
         atletasPatrocinados: base.atletasPatrocinados ?? null,
         tipoInvestimento: base.tipoInvestimento ?? null,
         logoUrl: base.logoUrl ?? null,
+        fotoUrl: base.fotoUrl ?? null,
       };
 
       // 2. No meu perfil, completa com os dados privados (telefone, nascimento, observações)
@@ -433,7 +458,6 @@ export default function Profile() {
             atletasPatrocinados: p.atletasPatrocinados ?? null,
             tipoInvestimento: p.tipoInvestimento ?? null,
             redesSocial: p.redesSocial ?? null,
-            logoUrl: p.logoUrl ?? null,
           };
         }
       }
@@ -494,8 +518,8 @@ export default function Profile() {
     setPerfil((prev) => (prev ? { ...prev, [fieldName]: value } : null));
   };
 
-  const handleLogoUpdate = (newLogoUrl: string) => {
-    setPerfil((prev) => (prev ? { ...prev, logoUrl: newLogoUrl } : null));
+  const handleFotoChange = (url: string | null) => {
+    setPerfil((prev) => (prev ? { ...prev, fotoUrl: url } : null));
   };
 
   const handleSaveProfile = async () => {
@@ -536,7 +560,7 @@ export default function Profile() {
           atletasPatrocinados: perfil.atletasPatrocinados ?? "",
           tipoInvestimento: perfil.tipoInvestimento ?? "",
           redesSocial: perfil.redesSocial ?? "",
-          logoUrl: perfil.logoUrl ?? "",
+          // logoUrl não é enviado aqui: a logo é salva na hora pelo botão de foto.
         };
         await profileApi.updateMarcaProfile(payload);
       }
@@ -600,13 +624,13 @@ export default function Profile() {
         </CardHeader>
 
         <CardContent>
-          {!isAtleta && (
-            <LogoUploadSection
-              logoUrl={perfil.logoUrl}
-              isEditing={isEditing && isMyProfile}
-              onLogoUpdate={handleLogoUpdate}
-            />
-          )}
+          <FotoPerfilSection
+            nome={perfil.nome}
+            tipo={perfil.tipo}
+            fotoUrl={perfil.fotoUrl}
+            isMyProfile={isMyProfile}
+            onChange={handleFotoChange}
+          />
 
           <ProfileFields
             perfil={perfil}
