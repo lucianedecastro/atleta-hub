@@ -25,6 +25,7 @@ import { LinhasQuadra } from "@/components/LinhasQuadra";
 import { useAuth } from "@/services/auth-context";
 import { auth, LoginRequest, wakeUpApi } from "@/services/apiService";
 import { getErrorMessage } from "@/lib/errors";
+import { ehMaiorDeIdade, hojeISO, MENSAGEM_MENOR_DE_IDADE } from "@/lib/idade";
 
 enum AuthMode {
   Login = "login",
@@ -45,6 +46,7 @@ interface AuthFormData {
   cidade: string;
   estado: string;
   idioma: string;
+  dataNascimento: string;
 }
 
 const SENHA_MINIMA = 8;
@@ -57,6 +59,7 @@ const initialFormData: AuthFormData = {
   cidade: "",
   estado: "",
   idioma: "pt",
+  dataNascimento: "",
 };
 
 const TIPOS: { valor: UserType; rotulo: string }[] = [
@@ -76,6 +79,7 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [erroNascimento, setErroNascimento] = useState("");
 
   const { login } = useAuth();
 
@@ -93,6 +97,7 @@ export default function Auth() {
       setFormData(initialFormData);
       setAcceptedTerms(false);
       setAcceptedPrivacy(false);
+      setErroNascimento("");
     }
   }, [searchParams, mode]);
 
@@ -100,6 +105,7 @@ export default function Auth() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
       setFormData((prev) => ({ ...prev, [name]: value }));
+      if (name === "dataNascimento") setErroNascimento("");
     },
     []
   );
@@ -137,6 +143,25 @@ export default function Auth() {
             return;
           }
 
+          if (!formData.dataNascimento) {
+            setErroNascimento("Informe sua data de nascimento.");
+            erroDeValidacao("Informe sua data de nascimento.");
+            return;
+          }
+
+          // Bloqueio de menores de 18 anos (o servidor aplica a mesma regra).
+          const maior = ehMaiorDeIdade(formData.dataNascimento);
+          if (maior === null) {
+            setErroNascimento("Data de nascimento inválida.");
+            erroDeValidacao("Data de nascimento inválida.");
+            return;
+          }
+          if (!maior) {
+            setErroNascimento(MENSAGEM_MENOR_DE_IDADE);
+            erroDeValidacao(MENSAGEM_MENOR_DE_IDADE);
+            return;
+          }
+
           if (formData.senha.length < SENHA_MINIMA) {
             erroDeValidacao(`A senha precisa ter pelo menos ${SENHA_MINIMA} caracteres.`);
             return;
@@ -162,6 +187,9 @@ export default function Auth() {
             cidade,
             estado,
             idioma: formData.idioma,
+            dataNascimento: formData.dataNascimento,
+            concordoTermos: acceptedTerms,
+            concordoPrivacidade: acceptedPrivacy,
           });
 
           toast({
@@ -190,7 +218,8 @@ export default function Auth() {
             title: "Login realizado com sucesso!",
           });
 
-          navigate("/dashboard");
+          // Contas antigas sem data de nascimento passam primeiro pela confirmação.
+          navigate(response.data.user.precisaInformarNascimento ? "/confirmar-nascimento" : "/dashboard");
         }
       } catch (err) {
         toast({
@@ -252,6 +281,33 @@ export default function Auth() {
                       </div>
                     </div>
                   </>
+                )}
+
+                {!ehLogin && (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="dataNascimento">Data de nascimento</Label>
+                    <Input
+                      id="dataNascimento"
+                      name="dataNascimento"
+                      type="date"
+                      autoComplete="bday"
+                      min="1900-01-01"
+                      max={hojeISO()}
+                      value={formData.dataNascimento}
+                      onChange={handleInputChange}
+                      aria-invalid={erroNascimento ? true : undefined}
+                      aria-describedby={erroNascimento ? "erro-nascimento" : "dica-nascimento"}
+                    />
+                    {erroNascimento ? (
+                      <p id="erro-nascimento" role="alert" className="text-sm font-bold text-destructive">
+                        {erroNascimento}
+                      </p>
+                    ) : (
+                      <p id="dica-nascimento" className="text-sm text-muted-foreground">
+                        Só maiores de 18 anos podem criar conta.
+                      </p>
+                    )}
+                  </div>
                 )}
 
                 <div className="grid gap-1.5">

@@ -7,17 +7,20 @@ import {
 } from "react";
 
 // Define a interface para os dados do usuário.
-interface UserData {
+export interface UserData {
   id: number;
   email: string;
   name: string;
   userType: "atleta" | "marca" | "admin"; // Backend retorna em minúsculas
+  idioma?: string; // idioma da conta (sessões antigas não têm)
+  precisaInformarNascimento?: boolean; // contas antigas sem data de nascimento
 }
 
 interface AuthContextType {
   userData: UserData | null;
   login: (token: string, user: UserData) => void;
   logout: () => void;
+  atualizarUsuario: (parcial: Partial<UserData>) => void;
   isAuthenticated: boolean;
 }
 
@@ -83,10 +86,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUserData(user);
   }, []);
 
+  // Atualiza parte dos dados da sessão (ex.: depois de informar a data de nascimento).
+  const atualizarUsuario = useCallback((parcial: Partial<UserData>) => {
+    setUserData((atual) => {
+      if (!atual) return atual;
+      const novo = { ...atual, ...parcial };
+      try {
+        localStorage.setItem("user", JSON.stringify(novo));
+      } catch {
+        /* storage indisponível */
+      }
+      return novo;
+    });
+  }, []);
+
   // O token é anexado a cada requisição pelo interceptor do apiService.
   return (
     <AuthContext.Provider
-      value={{ userData, login, logout, isAuthenticated: !!userData }}
+      value={{ userData, login, logout, atualizarUsuario, isAuthenticated: !!userData }}
     >
       {children}
     </AuthContext.Provider>

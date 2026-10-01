@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Compass, LogOut, MessageCircle, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -24,6 +24,11 @@ export default function AppLayout() {
     logout();
     navigate("/auth?mode=login");
   };
+
+  // Contas antigas sem data de nascimento precisam informá-la antes de usar o app.
+  if (userData?.precisaInformarNascimento) {
+    return <Navigate to="/confirmar-nascimento" replace />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">

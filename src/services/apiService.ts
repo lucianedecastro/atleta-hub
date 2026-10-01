@@ -90,6 +90,10 @@ export interface LoginResponse {
     email: string;
     name: string;
     userType: 'atleta' | 'marca' | 'admin';
+    // Idioma da conta (o chat traduz para ele)
+    idioma?: string;
+    // true em contas antigas que ainda não informaram a data de nascimento
+    precisaInformarNascimento?: boolean;
   };
 }
 
@@ -102,6 +106,11 @@ export interface RegisterRequest {
   cidade: string;
   estado: string;
   idioma: string;
+  // AAAA-MM-DD. Só maiores de 18 anos criam conta.
+  dataNascimento: string;
+  // Dois aceites separados
+  concordoTermos: boolean;
+  concordoPrivacidade: boolean;
 }
 
 // -------- User (perfil público) --------
@@ -247,8 +256,9 @@ export interface MessageResponse {
 // -------- Tradução --------
 export interface CriarMensagemTraducaoRequest {
   idMensagem: number;
-  idiomaOrigem: string;
-  idiomaDestino: string;
+  // Opcionais: o servidor detecta a origem e traduz para o idioma da conta.
+  idiomaOrigem?: string;
+  idiomaDestino?: string;
 }
 
 export interface MensagemTraducaoResponse {
@@ -267,6 +277,12 @@ export interface MensagemTraducaoResponse {
 const auth = {
   login: (data: LoginRequest) => api.post<LoginResponse>('/auth/login', data),
   register: (data: RegisterRequest) => api.post<{ message: string }>('/auth/registrar', data),
+};
+
+// Conta: contas antigas informam a data de nascimento (uma única vez)
+const conta = {
+  informarNascimento: (dataNascimento: string) =>
+    api.put<{ message: string }>('/conta/nascimento', { dataNascimento }),
 };
 
 const users = {
@@ -346,6 +362,7 @@ const modalidades = {
 
 export {
   auth,
+  conta,
   users,
   profile,
   vitrine,

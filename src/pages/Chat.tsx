@@ -26,10 +26,8 @@ interface Message {
 // Atualiza a conversa a cada 15s enquanto a aba está aberta (até existir chat em tempo real).
 const INTERVALO_ATUALIZACAO_MS = 15000;
 
-// Detecção simples PT↔EN (a mesma usada para pedir a tradução ao servidor).
-function detectarIdioma(texto: string): "pt" | "en" {
-  return /[áàâãéèêíïóôõöúçñ]/i.test(texto) ? "pt" : "en";
-}
+// Nome do idioma da conta, para o rótulo da tradução.
+const NOMES_IDIOMA: Record<string, string> = { pt: "português", en: "inglês", es: "espanhol" };
 
 function formatarHora(iso: string): string {
   const data = new Date(iso);
@@ -195,14 +193,14 @@ export default function Chat() {
     try {
       setTraduzindo(mensagem.id);
 
-      const idiomaOrigem = detectarIdioma(mensagem.texto);
-      const idiomaDestino = idiomaOrigem === "pt" ? "en" : "pt";
+      // O servidor detecta o idioma da mensagem e traduz para o idioma da sua conta.
+      const res = await messageTranslations.translate({ idMensagem: mensagem.id });
 
-      const res = await messageTranslations.translate({
-        idMensagem: mensagem.id,
-        idiomaOrigem,
-        idiomaDestino,
-      });
+      // Já estava no idioma de quem lê: não há o que mostrar.
+      if (res.data.textoTraduzido.trim() === mensagem.texto.trim()) {
+        toast({ title: "Já está no seu idioma", description: "Esta mensagem não precisa de tradução." });
+        return;
+      }
 
       setMensagens((prev) =>
         prev.map((m) =>
@@ -221,6 +219,8 @@ export default function Chat() {
   };
 
   const idDoUsuario = userData?.id;
+  const meuIdioma = userData?.idioma;
+  const nomeMeuIdioma = meuIdioma ? NOMES_IDIOMA[meuIdioma.slice(0, 2).toLowerCase()] : undefined;
 
   // Mostra a lista no celular quando nenhuma conversa está aberta; no computador, sempre.
   const listaVisivel = !matchId;
@@ -346,8 +346,6 @@ export default function Chat() {
                 mensagens.length > 0 ? (
                   mensagens.map((msg) => {
                     const isMine = msg.idRemetente === idDoUsuario;
-                    const idiomaOrigem = detectarIdioma(msg.texto);
-                    const idiomaDestino = idiomaOrigem === "pt" ? "en" : "pt";
                     const hora = formatarHora(msg.dataEnvio);
 
                     return (
@@ -360,13 +358,13 @@ export default function Chat() {
                               : "rounded-2xl rounded-bl-sm bg-secondary text-foreground"
                           )}
                         >
-                          <p lang={isMine ? undefined : idiomaOrigem}>{msg.texto}</p>
+                          <p>{msg.texto}</p>
 
                           {!isMine && msg.traducao && (
                             <div className="mt-2 border-t-2 border-primary/25 pt-2">
-                              <p lang={idiomaDestino}>{msg.traducao}</p>
+                              <p lang={meuIdioma ?? undefined}>{msg.traducao}</p>
                               <p className="mt-1 text-sm font-bold text-primary">
-                                Traduzido do {idiomaOrigem === "pt" ? "português" : "inglês"}
+                                {nomeMeuIdioma ? `Traduzido para o ${nomeMeuIdioma}` : "Tradução"}
                               </p>
                             </div>
                           )}

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ConfirmarNascimento from "./pages/ConfirmarNascimento";
 import Termos from "@/pages/Termos";
 import Privacidade from "@/pages/Privacidade";
 import Profile from "./pages/Profile";
@@ -49,6 +50,7 @@ function App() {
               <Route path="/sobre" element={<Sobre />} />
               <Route path="/arquitetura" element={<Arquitetura />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/confirmar-nascimento" element={<ConfirmarNascimento />} />
               <Route path="/termos" element={<Termos />} />
               <Route path="/privacidade" element={<Privacidade />} />
               <Route path="*" element={<NotFound />} />
