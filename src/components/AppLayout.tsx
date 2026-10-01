@@ -71,7 +71,15 @@ export default function AppLayout() {
         </div>
       </header>
 
-      <main id="conteudo" tabIndex={-1} className="container flex-1 py-6 pb-28 outline-none md:pb-10">
+      <main
+        id="conteudo"
+        tabIndex={-1}
+        className={cn(
+          "container flex-1 outline-none",
+          // A conversa ocupa a tela toda: menos folga em volta, só o espaço da barra de abas.
+          pathname.startsWith("/chat") ? "py-3 pb-20 md:pb-3" : "py-6 pb-28 md:pb-10"
+        )}
+      >
         <Outlet />
       </main>
 

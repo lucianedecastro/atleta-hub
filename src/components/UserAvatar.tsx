@@ -51,7 +51,7 @@ export function UserAvatar({ nome, url, tipo, size = "md", className, decorativo
         aria-hidden="true"
         className={cn(
           "font-semibold",
-          ehMarca ? "bg-accent/20 text-accent-foreground" : "bg-primary/10 text-primary"
+          ehMarca ? "bg-accent text-accent-foreground" : "bg-primary/10 text-primary"
         )}
       >
         {iniciais(nome)}

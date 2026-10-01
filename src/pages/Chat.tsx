@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Languages, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/services/auth-context";
@@ -18,6 +13,7 @@ import {
 } from "@/services/apiService";
 import { getErrorMessage } from "@/lib/errors";
 import { UserAvatar } from "@/components/UserAvatar";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: number;
@@ -29,6 +25,23 @@ interface Message {
 
 // Atualiza a conversa a cada 15s enquanto a aba está aberta (até existir chat em tempo real).
 const INTERVALO_ATUALIZACAO_MS = 15000;
+
+// Detecção simples PT↔EN (a mesma usada para pedir a tradução ao servidor).
+function detectarIdioma(texto: string): "pt" | "en" {
+  return /[áàâãéèêíïóôõöúçñ]/i.test(texto) ? "pt" : "en";
+}
+
+function formatarHora(iso: string): string {
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return "";
+  return data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatarData(iso: string): string {
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return "";
+  return data.toLocaleDateString("pt-BR");
+}
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -47,15 +60,14 @@ export default function Chat() {
 
   const fimDasMensagens = useRef<HTMLDivElement | null>(null);
 
-  // O match aberto vem da URL (/chat/:matchId). Antes a URL era ignorada e a conversa
-  // nunca abria ao clicar num match do Dashboard.
+  // O match aberto vem da URL (/chat/:matchId).
   const matchSelecionado = useMemo(
     () => listaMatches.find((m) => String(m.id) === matchId) ?? null,
     [listaMatches, matchId]
   );
 
   // =========================
-  // 🔹 Proteção + matches
+  // Proteção + matches
   // =========================
   useEffect(() => {
     if (!userData) {
@@ -77,7 +89,7 @@ export default function Chat() {
   }, [userData, navigate]);
 
   // =========================
-  // 🔹 Mensagens (carga + atualização periódica)
+  // Mensagens (carga + atualização periódica)
   // =========================
   const carregarMensagens = useCallback(
     async (id: number, silencioso: boolean) => {
@@ -120,7 +132,7 @@ export default function Chat() {
   }, [matchSelecionado, carregarMensagens]);
 
   useEffect(() => {
-    fimDasMensagens.current?.scrollIntoView({ behavior: "smooth" });
+    fimDasMensagens.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [mensagens.length]);
 
   // Ao trocar de conversa, recomeça o controle (a primeira carga não é "mensagem nova").
@@ -141,7 +153,7 @@ export default function Chat() {
   }, [mensagens, matchSelecionado, userData?.id]);
 
   // =========================
-  // 🔹 Enviar mensagem
+  // Enviar mensagem
   // =========================
   const enviarMensagem = async () => {
     const texto = novaMensagem.trim();
@@ -169,10 +181,10 @@ export default function Chat() {
   };
 
   // =========================
-  // 🔤 Traduzir mensagem
+  // Traduzir mensagem
   // =========================
   const traduzirMensagem = async (mensagem: Message) => {
-    // Já traduzida: só volta ao original (sem chamar o backend)
+    // Já traduzida: só esconde a tradução (sem chamar o backend)
     if (mensagem.traducao) {
       setMensagens((prev) =>
         prev.map((m) => (m.id === mensagem.id ? { ...m, traducao: undefined } : m))
@@ -183,10 +195,8 @@ export default function Chat() {
     try {
       setTraduzindo(mensagem.id);
 
-      // Detecção simples PT↔EN
-      const temCaracteresPortugueses = /[áàâãéèêíïóôõöúçñ]/i.test(mensagem.texto);
-      const idiomaOrigem = temCaracteresPortugueses ? "pt" : "en";
-      const idiomaDestino = temCaracteresPortugueses ? "en" : "pt";
+      const idiomaOrigem = detectarIdioma(mensagem.texto);
+      const idiomaDestino = idiomaOrigem === "pt" ? "en" : "pt";
 
       const res = await messageTranslations.translate({
         idMensagem: mensagem.id,
@@ -212,148 +222,239 @@ export default function Chat() {
 
   const idDoUsuario = userData?.id;
 
+  // Mostra a lista no celular quando nenhuma conversa está aberta; no computador, sempre.
+  const listaVisivel = !matchId;
+  // O título principal da página é a lista (sem conversa aberta) ou o nome de quem está na conversa.
+  const nivelTituloLista = matchId ? 2 : 1;
+
   return (
-    <div className="flex h-[100dvh] gap-4 p-3 md:p-8">
-      {/* ================= LISTA DE CONVERSAS =================
-          No celular, a lista some quando uma conversa está aberta (e vice-versa). */}
-      <Card className={`${matchId ? "hidden md:flex" : "flex"} w-full md:w-64 md:shrink-0 flex-col`}>
-        <CardHeader className="space-y-3">
-          <CardTitle role="heading" aria-level={2}>Conversas</CardTitle>
+    <div className="flex h-[calc(100dvh-9.75rem)] gap-4 md:h-[calc(100dvh-5.5rem)]">
+      {/* ================= LISTA DE CONVERSAS ================= */}
+      <section
+        aria-labelledby="conversas-titulo"
+        className={cn(
+          "min-w-0 flex-col overflow-hidden rounded-2xl border-2 border-primary bg-card md:flex md:w-80 md:shrink-0",
+          listaVisivel ? "flex w-full" : "hidden"
+        )}
+      >
+        <h2
+          id="conversas-titulo"
+          role="heading"
+          aria-level={nivelTituloLista}
+          className="border-b-2 border-primary px-4 py-3 text-2xl font-extrabold"
+        >
+          Conversas
+        </h2>
 
-          <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
-            ← Voltar para o Dashboard
-          </Button>
-        </CardHeader>
-
-        <CardContent className="flex flex-col gap-2 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {carregandoMatches ? (
-            <p className="text-sm text-muted-foreground">Carregando...</p>
+            <p role="status" className="p-4 text-muted-foreground">
+              Carregando...
+            </p>
           ) : listaMatches.length > 0 ? (
-            listaMatches.map((match) => (
-              <Button
-                key={match.id}
-                variant={matchSelecionado?.id === match.id ? "default" : "outline"}
-                className="justify-start gap-2"
-                aria-current={matchSelecionado?.id === match.id ? "true" : undefined}
-                onClick={() => navigate(`/chat/${match.id}`)}
-              >
-                <UserAvatar nome={match.nomeOutroUsuario} url={match.fotoOutroUsuario} size="sm" decorativo />
-                {match.nomeOutroUsuario}
-              </Button>
-            ))
+            <ul>
+              {listaMatches.map((match) => {
+                const ativo = matchSelecionado?.id === match.id;
+                const data = formatarData(match.dataMatch);
+
+                return (
+                  <li key={match.id}>
+                    <Link
+                      to={`/chat/${match.id}`}
+                      aria-current={ativo ? "page" : undefined}
+                      className={cn(
+                        "flex min-h-[4.5rem] items-center gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-secondary",
+                        ativo && "bg-secondary"
+                      )}
+                    >
+                      <UserAvatar
+                        nome={match.nomeOutroUsuario}
+                        url={match.fotoOutroUsuario}
+                        size="md"
+                        decorativo
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate font-extrabold">{match.nomeOutroUsuario}</span>
+                        {data && <span className="block text-sm text-muted-foreground">Match em {data}</span>}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">Nenhuma conversa disponível.</p>
+            <div className="p-4">
+              <p className="text-muted-foreground">
+                Nenhuma conversa ainda. Curta perfis em Descobrir: quando for recíproco, vira um match e a conversa abre aqui.
+              </p>
+              <Button asChild variant="outline" className="mt-4">
+                <Link to="/dashboard">Ir para Descobrir</Link>
+              </Button>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* ================= CONVERSA ================= */}
-      <Card className={`${matchId ? "flex" : "hidden md:flex"} flex-1 min-w-0 flex-col`}>
-        <CardHeader className="space-y-2">
-          <div className="md:hidden">
-            <Button variant="outline" size="sm" onClick={() => navigate("/chat")}>
-              ← Conversas
-            </Button>
-          </div>
-          <CardTitle role="heading" aria-level={1} className="flex items-center gap-3">
-            {matchSelecionado && (
-              <UserAvatar
-                nome={matchSelecionado.nomeOutroUsuario}
-                url={matchSelecionado.fotoOutroUsuario}
-                size="sm"
-                decorativo
-              />
-            )}
-            {matchSelecionado
-              ? `Chat com ${matchSelecionado.nomeOutroUsuario}`
-              : "Selecione uma conversa"}
-          </CardTitle>
-        </CardHeader>
+      <section
+        aria-label="Conversa"
+        className={cn(
+          "min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border-2 border-primary bg-card md:flex",
+          matchId ? "flex" : "hidden"
+        )}
+      >
+        {matchId ? (
+          <>
+            <header className="on-dark flex items-center gap-3 bg-primary px-3 py-3 text-primary-foreground">
+              <Link
+                to="/chat"
+                aria-label="Voltar para Conversas"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-white/15 md:hidden"
+              >
+                <ArrowLeft aria-hidden="true" />
+              </Link>
+              {matchSelecionado && (
+                <UserAvatar
+                  nome={matchSelecionado.nomeOutroUsuario}
+                  url={matchSelecionado.fotoOutroUsuario}
+                  size="md"
+                  className="border-2 border-white"
+                  decorativo
+                />
+              )}
+              <h1 className="min-w-0 truncate text-xl font-extrabold">
+                {matchSelecionado ? matchSelecionado.nomeOutroUsuario : "Conversa"}
+              </h1>
+            </header>
 
-        <CardContent className="flex-1 flex flex-col justify-between min-h-0">
-          <div className="sr-only" role="status" aria-live="polite">{anuncio}</div>
-          <div
-            role="log"
-            aria-live="off"
-            aria-label="Mensagens da conversa"
-            className="flex-1 space-y-4 overflow-y-auto mb-4 pr-2"
-          >
-            {matchSelecionado ? (
-              mensagens.length > 0 ? (
-                mensagens.map((msg) => {
-                  const isMine = msg.idRemetente === idDoUsuario;
+            <p className="flex items-center gap-2 border-b-2 border-primary bg-secondary px-4 py-2 text-sm font-semibold">
+              <Languages className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              Tradução ativada: toque em Traduzir em qualquer mensagem recebida.
+            </p>
 
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`max-w-[85%] md:max-w-[70%] rounded-lg p-3 text-sm break-words ${
-                          isMine
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        }`}
-                      >
-                        <p>{msg.traducao ?? msg.texto}</p>
+            <div className="sr-only" role="status" aria-live="polite">
+              {anuncio}
+            </div>
 
-                        {!isMine && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="px-0 mt-1"
-                            disabled={traduzindo === msg.id}
-                            onClick={() => traduzirMensagem(msg)}
-                          >
-                            {traduzindo === msg.id
-                              ? "Traduzindo..."
-                              : msg.traducao
-                                ? "Ver Original"
-                                : "Traduzir"}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda.</p>
-              )
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {carregandoMatches
-                  ? "Carregando..."
-                  : matchId
-                    ? "Conversa não encontrada."
-                    : "Selecione uma conversa para começar."}
-              </p>
-            )}
-            <div ref={fimDasMensagens} />
-          </div>
-
-          {matchSelecionado && (
-            <form
-              className="flex gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                enviarMensagem();
-              }}
+            <div
+              role="log"
+              aria-live="off"
+              aria-label="Mensagens da conversa"
+              className="flex-1 space-y-3 overflow-y-auto p-4"
             >
-              <Input
-                value={novaMensagem}
-                onChange={(e) => setNovaMensagem(e.target.value)}
-                placeholder="Digite sua mensagem"
-                aria-label="Mensagem"
-                maxLength={2000}
-                autoComplete="off"
-              />
-              <Button type="submit" disabled={enviando || !novaMensagem.trim()}>
-                {enviando ? "..." : "Enviar"}
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+              {matchSelecionado ? (
+                mensagens.length > 0 ? (
+                  mensagens.map((msg) => {
+                    const isMine = msg.idRemetente === idDoUsuario;
+                    const idiomaOrigem = detectarIdioma(msg.texto);
+                    const idiomaDestino = idiomaOrigem === "pt" ? "en" : "pt";
+                    const hora = formatarHora(msg.dataEnvio);
+
+                    return (
+                      <div key={msg.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+                        <div
+                          className={cn(
+                            "max-w-[85%] break-words px-4 py-3 md:max-w-[70%]",
+                            isMine
+                              ? "rounded-2xl rounded-br-sm bg-primary text-primary-foreground"
+                              : "rounded-2xl rounded-bl-sm bg-secondary text-foreground"
+                          )}
+                        >
+                          <p lang={isMine ? undefined : idiomaOrigem}>{msg.texto}</p>
+
+                          {!isMine && msg.traducao && (
+                            <div className="mt-2 border-t-2 border-primary/25 pt-2">
+                              <p lang={idiomaDestino}>{msg.traducao}</p>
+                              <p className="mt-1 text-sm font-bold text-primary">
+                                Traduzido do {idiomaOrigem === "pt" ? "português" : "inglês"}
+                              </p>
+                            </div>
+                          )}
+
+                          <div
+                            className={cn(
+                              "mt-1 flex items-center gap-3",
+                              isMine ? "justify-end" : "justify-between"
+                            )}
+                          >
+                            {!isMine && (
+                              <Button
+                                type="button"
+                                variant="link"
+                                size="sm"
+                                className="h-auto min-h-11 px-0 py-0"
+                                disabled={traduzindo === msg.id}
+                                onClick={() => traduzirMensagem(msg)}
+                              >
+                                {traduzindo === msg.id
+                                  ? "Traduzindo..."
+                                  : msg.traducao
+                                    ? "Ver só o original"
+                                    : "Traduzir"}
+                              </Button>
+                            )}
+                            {hora && (
+                              <time
+                                dateTime={msg.dataEnvio}
+                                className={cn("text-sm", isMine ? "text-primary-foreground/85" : "text-muted-foreground")}
+                              >
+                                {hora}
+                              </time>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-muted-foreground">Nenhuma mensagem ainda. Diga oi!</p>
+                )
+              ) : (
+                <p className="text-muted-foreground">
+                  {carregandoMatches ? "Carregando..." : "Conversa não encontrada."}
+                </p>
+              )}
+              <div ref={fimDasMensagens} />
+            </div>
+
+            {matchSelecionado && (
+              <form
+                className="flex items-center gap-2 border-t-2 border-primary p-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  enviarMensagem();
+                }}
+              >
+                <Input
+                  value={novaMensagem}
+                  onChange={(e) => setNovaMensagem(e.target.value)}
+                  placeholder="Digite sua mensagem"
+                  aria-label="Mensagem"
+                  maxLength={2000}
+                  autoComplete="off"
+                  className="rounded-full px-5"
+                />
+                <Button
+                  type="submit"
+                  variant="cta"
+                  size="icon"
+                  aria-label={enviando ? "Enviando" : "Enviar"}
+                  disabled={enviando || !novaMensagem.trim()}
+                  className="shrink-0"
+                >
+                  <Send aria-hidden="true" />
+                </Button>
+              </form>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-1 items-center justify-center p-8 text-center">
+            <p className="max-w-xs text-lg text-muted-foreground">
+              {carregandoMatches ? "Carregando..." : "Selecione uma conversa para começar."}
+            </p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

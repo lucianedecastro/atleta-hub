@@ -1,15 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/services/auth-context";
 import {
@@ -23,6 +16,7 @@ import {
 } from "@/services/apiService";
 import { getErrorMessage } from "@/lib/errors";
 import { UserAvatar } from "@/components/UserAvatar";
+import { PerfilFoto } from "@/components/PerfilFoto";
 import axios from "axios";
 
 // Enums para tipos de usuário
@@ -34,14 +28,25 @@ enum UserType {
 type PerfilDetalhes = UserDetailsResponse;
 type Match = MatchResponse;
 
+// Linha de detalhes que aparece sobre a foto (modalidade e idade, ou produto e tempo de mercado).
+function detalhesDoPerfil(profile: PerfilDetalhes): string {
+  const partes =
+    profile.tipoUsuario === UserType.ATLETA
+      ? [profile.modalidade, profile.idade ? `${profile.idade} anos` : ""]
+      : [profile.produto, profile.tempoMercado];
+  return partes.filter(Boolean).join(" · ");
+}
+
 export default function Dashboard() {
-  const { userData, logout } = useAuth();
+  const { userData } = useAuth();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<PerfilDetalhes[]>([]);
   const [userMatches, setUserMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState<number | null>(null);
+
+  const souAtleta = userData?.userType?.toUpperCase() === UserType.ATLETA;
 
   useEffect(() => {
     if (!userData) {
@@ -139,134 +144,142 @@ export default function Dashboard() {
     [userData, enviando, userMatches.length]
   );
 
-  const handleLogout = () => {
-    logout();
-    navigate("/auth?mode=login");
-  };
+  const titulo = souAtleta ? "Marcas para você" : "Atletas para você";
 
   if (loading) {
-    return <div className="p-8 pt-6 text-center text-lg font-medium">Carregando...</div>;
+    return (
+      <div role="status" aria-live="polite">
+        <span className="sr-only">Carregando perfis...</span>
+        <div aria-hidden="true">
+          <Skeleton className="h-10 w-72 max-w-full rounded-xl" />
+          <div className="mt-6 flex gap-3">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-14 w-14 rounded-full" />
+            ))}
+          </div>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="p-8 pt-6 text-center space-y-4">
-        <p className="text-red-600 font-medium">{error}</p>
+      <div className="mx-auto max-w-md space-y-4 py-10 text-center">
+        <h1 className="text-2xl font-extrabold">Não foi possível carregar</h1>
+        <p className="text-destructive font-medium">{error}</p>
         <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
+    <div className="space-y-8">
+      <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">{titulo}</h1>
 
-        <div className="flex items-center space-x-2">
-          <Link to={`/profile/${userData?.id}`}>
-            <Button>Meu Perfil</Button>
-          </Link>
-          <Button variant="outline" onClick={handleLogout}>Sair</Button>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Matches</CardTitle>
-            <CardDescription>
-              Você tem {userMatches.length} {userMatches.length === 1 ? "match" : "matches"} no momento.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {userMatches.length > 0 ? (
-              <ul className="space-y-2">
-                {userMatches.map((match) => (
-                  <li key={match.id}>
-                    <Link
-                      to={`/chat/${match.id}`}
-                      className="flex items-center gap-3 text-primary hover:underline"
-                    >
-                      <UserAvatar nome={match.nomeOutroUsuario} url={match.fotoOutroUsuario} size="sm" decorativo />
-                      {match.nomeOutroUsuario}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted-foreground">Nenhum match ainda.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {profiles.length > 0 ? (
-          profiles.map((profile) => (
-            <Card key={profile.id}>
-              <CardHeader>
-                <div className="flex items-center gap-4">
+      {/* Matches */}
+      <section aria-labelledby="matches-titulo">
+        <h2 id="matches-titulo" className="text-xl font-extrabold">
+          Seus matches
+        </h2>
+        {userMatches.length > 0 ? (
+          <ul className="mt-3 flex gap-4 overflow-x-auto pb-2">
+            {userMatches.map((match) => (
+              <li key={match.id} className="shrink-0">
+                <Link
+                  to={`/chat/${match.id}`}
+                  className="flex w-20 flex-col items-center gap-1.5 rounded-xl p-1 text-center"
+                >
                   <UserAvatar
-                    nome={profile.nome}
-                    url={profile.fotoUrl}
-                    tipo={profile.tipoUsuario}
+                    nome={match.nomeOutroUsuario}
+                    url={match.fotoOutroUsuario}
                     size="lg"
+                    className="border-2 border-primary"
                     decorativo
                   />
-                  <div className="min-w-0">
-                    <CardTitle className="truncate">{profile.nome}</CardTitle>
-                    <CardDescription>
-                      {profile.tipoUsuario === UserType.ATLETA ? "Atleta" : "Marca"}
-                      {profile.cidade ? ` · ${profile.cidade}${profile.estado ? `/${profile.estado}` : ""}` : ""}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {profile.tipoUsuario === UserType.ATLETA ? (
-                  <>
-                    <div className="flex items-center space-x-4">
-                      <Label className="font-semibold text-sm">Modalidade:</Label>
-                      <span className="text-muted-foreground text-sm">{profile.modalidade || "N/A"}</span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <Label className="font-semibold text-sm">Idade:</Label>
-                      <span className="text-muted-foreground text-sm">{profile.idade || "N/A"}</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center space-x-4">
-                      <Label className="font-semibold text-sm">Produto:</Label>
-                      <span className="text-muted-foreground text-sm">{profile.produto || "N/A"}</span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <Label className="font-semibold text-sm">Tempo de Mercado:</Label>
-                      <span className="text-muted-foreground text-sm">{profile.tempoMercado || "N/A"}</span>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-              <CardFooter className="flex gap-2">
-                <Button
-                  disabled={enviando === profile.id}
-                  aria-label={`Curtir ${profile.nome}`}
-                  onClick={() => handleDemonstrarInteresse(profile.id)}
-                >
-                  {enviando === profile.id ? "Enviando..." : "Curtir"}
-                </Button>
-                <Link to={`/profile/${profile.id}`}>
-                  <Button variant="outline" aria-label={`Ver perfil de ${profile.nome}`}>Ver Perfil</Button>
+                  <span className="line-clamp-2 break-words text-sm font-bold leading-tight">
+                    {match.nomeOutroUsuario}
+                  </span>
                 </Link>
-              </CardFooter>
-            </Card>
-          ))
+              </li>
+            ))}
+          </ul>
         ) : (
-          <p className="col-span-full text-center text-lg text-muted-foreground mt-4">
+          <p className="mt-2 text-muted-foreground">Nenhum match ainda.</p>
+        )}
+      </section>
+
+      {/* Perfis */}
+      <section aria-labelledby="perfis-titulo">
+        <h2 id="perfis-titulo" className="sr-only">
+          Perfis disponíveis
+        </h2>
+
+        {profiles.length > 0 ? (
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {profiles.map((profile) => {
+              const local = profile.cidade
+                ? `${profile.cidade}${profile.estado ? `/${profile.estado}` : ""}`
+                : "";
+              const detalhes = detalhesDoPerfil(profile);
+
+              return (
+                <li key={profile.id}>
+                  <article className="overflow-hidden rounded-2xl border-2 border-primary bg-card">
+                    <div className="on-dark relative aspect-[4/5] text-white">
+                      <PerfilFoto
+                        nome={profile.nome}
+                        url={profile.fotoUrl}
+                        tipo={profile.tipoUsuario}
+                        className="absolute inset-0"
+                      />
+                      <div
+                        aria-hidden="true"
+                        className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-[#0A1633] via-[#0A1633]/70 to-transparent"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 p-4">
+                        <h3 className="text-2xl font-extrabold leading-tight">{profile.nome}</h3>
+                        <p className="mt-1 font-semibold">
+                          {profile.tipoUsuario === UserType.ATLETA ? "Atleta" : "Marca"}
+                          {local && <span> · {local}</span>}
+                        </p>
+                        {detalhes && <p className="text-white/90">{detalhes}</p>}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-4">
+                      <Button asChild variant="outline" className="flex-1">
+                        <Link to={`/profile/${profile.id}`} aria-label={`Ver perfil de ${profile.nome}`}>
+                          Ver perfil
+                        </Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="cta"
+                        className="flex-1"
+                        disabled={enviando === profile.id}
+                        aria-label={`Curtir ${profile.nome}`}
+                        onClick={() => handleDemonstrarInteresse(profile.id)}
+                      >
+                        <Heart aria-hidden="true" />
+                        {enviando === profile.id ? "Enviando..." : "Curtir"}
+                      </Button>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="py-10 text-center text-lg text-muted-foreground">
             Nenhum perfil novo disponível no momento.
           </p>
         )}
-      </div>
+      </section>
     </div>
   );
 }
