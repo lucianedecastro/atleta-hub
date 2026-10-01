@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { PaginaPublica } from "@/components/PaginaPublica";
 
 const NotFound = () => {
   const location = useLocation();
@@ -15,20 +15,16 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="text-center max-w-md">
-        <div className="flex justify-center mb-6">
-          <AlertTriangle className="w-16 h-16 text-destructive" />
-        </div>
-        <h1 className="text-5xl font-bold mb-4 text-brand-primary">404</h1>
-        <p className="text-xl text-muted-foreground mb-6">
+    <PaginaPublica titulo="404">
+      <div className="max-w-md py-6">
+        <p className="mb-6 text-xl text-muted-foreground">
           Oops! A página que você tentou acessar não existe.
         </p>
-        <Button variant="outline" onClick={() => navigate("/")}>
+        <Button variant="cta" size="lg" onClick={() => navigate("/")}>
           Voltar para a página inicial
         </Button>
       </div>
-    </div>
+    </PaginaPublica>
   );
 };
 

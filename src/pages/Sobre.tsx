@@ -8,13 +8,12 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { PaginaPublica } from "@/components/PaginaPublica";
 
 const Sobre = () => {
   return (
-    <div className="container mx-auto px-4 py-20">
-      <h1 className="text-4xl font-bold mb-6">Sobre o AtletaHub</h1>
-
-      <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
+    <PaginaPublica titulo="Sobre o AtletaHub">
+      <p className="mb-6 max-w-3xl text-lg text-muted-foreground">
         O <strong>AtletaHub</strong> é uma plataforma digital desenvolvida com
         frontend em <strong>React + Vite</strong> e backend estruturado em{" "}
         <strong>Java + Spring Boot</strong>. Seu propósito central é{" "}
@@ -23,7 +22,7 @@ const Sobre = () => {
         eficiente e inteligente.
       </p>
 
-      <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
+      <p className="mb-6 max-w-3xl text-lg text-muted-foreground">
         Inicialmente concebida e hospedada em ambiente de nuvem tradicional, a
         plataforma passou por um <strong>processo de migração de
         infraestrutura</strong>, adotando uma arquitetura mais flexível,
@@ -34,11 +33,11 @@ const Sobre = () => {
       </p>
 
       {/* ODSs da Agenda 2030 */}
-      <h2 className="text-2xl font-semibold mb-6">
+      <h2 className="mb-6 mt-12 text-2xl font-extrabold">
         Contribuição para os Objetivos de Desenvolvimento Sustentável (ODS)
       </h2>
 
-      <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
+      <p className="mb-6 max-w-3xl text-lg text-muted-foreground">
         O <strong>AtletaHub</strong> contribui diretamente para os Objetivos de
         Desenvolvimento Sustentável (ODS) da Agenda 2030 da ONU, ao utilizar
         tecnologia como instrumento de inclusão social, econômica e cultural:
@@ -70,15 +69,15 @@ const Sobre = () => {
         da Agenda 2030.
       </p>
 
-      <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
+      <p className="mb-6 max-w-3xl text-lg text-muted-foreground">
         A iniciativa busca mitigar a escassez de recursos que limita o
         desenvolvimento esportivo no país, democratizando o acesso a
         oportunidades e valorizando talentos que, muitas vezes, não têm
         visibilidade nem domínio de outros idiomas.
       </p>
 
-      <h2 className="text-2xl font-semibold mb-6">Objetivos do AtletaHub</h2>
-      <ul className="list-disc list-inside text-muted-foreground mb-12 space-y-2 max-w-3xl">
+      <h2 className="mb-6 mt-12 text-2xl font-extrabold">Objetivos do AtletaHub</h2>
+      <ul className="mb-12 max-w-3xl list-inside list-disc space-y-2 text-lg text-muted-foreground">
         <li>
           Centralizar a busca por patrocínio, permitindo que atletas criem um
           único perfil visível a diversas marcas.
@@ -106,11 +105,11 @@ const Sobre = () => {
       </ul>
 
       {/* Funcionalidades Principais */}
-      <h2 className="text-2xl font-semibold mb-6">Funcionalidades Principais</h2>
+      <h2 className="mb-6 mt-12 text-2xl font-extrabold">Funcionalidades Principais</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <User className="w-5 h-5" /> Perfis Abrangentes
+        <div className="rounded-2xl border-2 border-primary bg-card p-6">
+          <h3 className="mb-2 flex items-center gap-2 text-lg font-extrabold">
+            <User className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /> Perfis Abrangentes
           </h3>
           <p className="text-muted-foreground">
             Atletas criam perfis completos com histórico esportivo, mídias e
@@ -119,9 +118,9 @@ const Sobre = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <MessageCircle className="w-5 h-5" /> Comunicação Segura
+        <div className="rounded-2xl border-2 border-primary bg-card p-6">
+          <h3 className="mb-2 flex items-center gap-2 text-lg font-extrabold">
+            <MessageCircle className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /> Comunicação Segura
           </h3>
           <p className="text-muted-foreground">
             Sistema de mensagens integrado ao perfil do atleta, garantindo
@@ -129,9 +128,9 @@ const Sobre = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Languages className="w-5 h-5" /> Tradução Automática
+        <div className="rounded-2xl border-2 border-primary bg-card p-6">
+          <h3 className="mb-2 flex items-center gap-2 text-lg font-extrabold">
+            <Languages className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /> Tradução Automática
           </h3>
           <p className="text-muted-foreground">
             Tradução automática das mensagens no chat, permitindo comunicação
@@ -142,11 +141,11 @@ const Sobre = () => {
       </div>
 
       {/* Funcionalidades Futuras */}
-      <h2 className="text-2xl font-semibold mb-6">Funcionalidades Futuras</h2>
+      <h2 className="mb-6 mt-12 text-2xl font-extrabold">Funcionalidades Futuras</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Search className="w-5 h-5" /> Busca e Filtros Avançados
+        <div className="rounded-2xl border-2 border-primary bg-card p-6">
+          <h3 className="mb-2 flex items-center gap-2 text-lg font-extrabold">
+            <Search className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /> Busca e Filtros Avançados
           </h3>
           <p className="text-muted-foreground">
             Marcas encontram atletas por modalidade, localidade, nível e
@@ -154,9 +153,9 @@ const Sobre = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Handshake className="w-5 h-5" /> Gestão de Propostas
+        <div className="rounded-2xl border-2 border-primary bg-card p-6">
+          <h3 className="mb-2 flex items-center gap-2 text-lg font-extrabold">
+            <Handshake className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /> Gestão de Propostas
           </h3>
           <p className="text-muted-foreground">
             Ferramentas para formalizar patrocínios e registrar parcerias com
@@ -164,9 +163,9 @@ const Sobre = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <LineChart className="w-5 h-5" /> Analytics
+        <div className="rounded-2xl border-2 border-primary bg-card p-6">
+          <h3 className="mb-2 flex items-center gap-2 text-lg font-extrabold">
+            <LineChart className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /> Analytics
           </h3>
           <p className="text-muted-foreground">
             Relatórios e métricas para análise de desempenho e retorno de
@@ -181,20 +180,18 @@ const Sobre = () => {
           Para um detalhamento técnico da solução, componentes, fluxos e
           decisões arquiteturais:
         </p>
-        <Link to="/arquitetura">
-          <Button variant="secondary">
-            Ver Arquitetura da Plataforma
-          </Button>
-        </Link>
+        <Button asChild>
+          <Link to="/arquitetura">Ver Arquitetura da Plataforma</Link>
+        </Button>
       </div>
 
       {/* Botão de retorno */}
       <div className="mt-6 text-center">
-        <Link to="/">
-          <Button variant="outline">← Voltar para a Página Inicial</Button>
-        </Link>
+        <Button asChild variant="outline">
+          <Link to="/">← Voltar para a Página Inicial</Link>
+        </Button>
       </div>
-    </div>
+    </PaginaPublica>
   );
 };
 

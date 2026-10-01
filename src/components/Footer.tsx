@@ -8,52 +8,54 @@ export function Footer() {
   const developerInstagram = "https://instagram.com/atletahubapp";
   const inpiNumber = "BR512025004065-2";
 
+  const linkLegal = "inline-flex min-h-11 items-center rounded-md font-semibold underline underline-offset-2";
+  const linkIcone =
+    "inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/60 transition-colors hover:bg-white/15";
+
   return (
-    <footer className="w-full bg-secondary text-secondary-foreground py-6 px-4">
-      <div className="container mx-auto flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+    <footer className="on-dark w-full bg-[#0A1633] px-4 py-8 text-white">
+      <div className="container mx-auto flex flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
 
         {/* Direitos Autorais */}
-        <div className="mb-4 md:mb-0">
-          <p className="text-sm">
+        <div>
+          <p className="text-sm text-white/90">
             &copy; {currentYear} AtletaHub. Todos os direitos reservados. <br />
             Software AtletaHub - Registrado no INPI sob o nº {inpiNumber}.
           </p>
-          <nav aria-label="Documentos legais" className="mt-2 flex justify-center md:justify-start gap-4 text-sm">
-            <Link to="/termos" className="underline hover:text-primary transition-colors">
+          <nav aria-label="Documentos legais" className="mt-1 flex justify-center gap-5 text-sm md:justify-start">
+            <Link to="/termos" className={linkLegal}>
               Termos de Uso
             </Link>
-            <Link to="/privacidade" className="underline hover:text-primary transition-colors">
+            <Link to="/privacidade" className={linkLegal}>
               Política de Privacidade
             </Link>
           </nav>
         </div>
 
         {/* Informações do Desenvolvedor */}
-        <div className="mb-4 md:mb-0">
-          <p className="text-sm">
-            Desenvolvido por {developerName}
-          </p>
-        </div>
+        <p className="text-sm text-white/90">
+          Desenvolvido por {developerName}
+        </p>
 
         {/* Links Sociais */}
-        <div className="flex space-x-4">
+        <div className="flex gap-3">
           <a
             href={`mailto:${developerEmail}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Enviar e-mail"
-            className="text-muted-foreground hover:text-primary transition-colors"
+            className={linkIcone}
           >
-            <Mail className="w-5 h-5" />
+            <Mail className="h-5 w-5" aria-hidden="true" />
           </a>
           <a
             href={developerInstagram}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram"
-            className="text-muted-foreground hover:text-primary transition-colors"
+            className={linkIcone}
           >
-            <Instagram className="w-5 h-5" />
+            <Instagram className="h-5 w-5" aria-hidden="true" />
           </a>
         </div>
       </div>

@@ -36,7 +36,7 @@ export function PerfilFoto({ nome, url, tipo, className }: PerfilFotoProps) {
           alt=""
           loading="lazy"
           onError={() => setFalhou(true)}
-          className={cn("h-full w-full", ehMarca ? "object-contain p-8" : "object-cover")}
+          className={cn("h-full w-full", ehMarca ? "object-contain p-4" : "object-cover")}
         />
       </div>
     );
@@ -46,14 +46,14 @@ export function PerfilFoto({ nome, url, tipo, className }: PerfilFotoProps) {
     <div
       aria-hidden="true"
       className={cn(
-        "flex items-center justify-center text-white",
+        "flex items-center justify-center pb-24 text-white",
         ehMarca
           ? "bg-gradient-to-br from-[#1646B5] to-[#0A1633]"
           : "bg-gradient-to-br from-[#1646B5] via-[#1646B5] to-[#0A1633]",
         className
       )}
     >
-      <span className="text-6xl font-extrabold tracking-tight opacity-90">{iniciais(nome)}</span>
+      <span className="text-6xl font-extrabold tracking-tight opacity-100">{iniciais(nome)}</span>
     </div>
   );
 }

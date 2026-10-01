@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Camera, Pencil, Video } from "lucide-react";
 import { useAuth } from "@/services/auth-context";
 import {
   users,
@@ -13,17 +14,12 @@ import {
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { UserAvatar } from "@/components/UserAvatar";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PerfilFoto } from "@/components/PerfilFoto";
 import { reduzirImagem } from "@/lib/imagem";
 
 // Limites iguais aos do servidor
@@ -66,6 +62,7 @@ interface PerfilForm {
 interface FieldConfig {
   key: keyof PerfilForm;
   label: string;
+  grupo: string;
   inputType?: React.HTMLInputTypeAttribute;
   isTextArea?: boolean;
   somenteDono?: boolean; // dado privado: só aparece no perfil do próprio usuário
@@ -73,30 +70,30 @@ interface FieldConfig {
 }
 
 const atletaFieldConfigs: FieldConfig[] = [
-  { key: "nome", label: "Nome" },
-  { key: "email", label: "Email", inputType: "email", somenteDono: true },
-  { key: "dataNascimento", label: "Data de Nascimento", inputType: "date", somenteDono: true },
-  { key: "telefoneContato", label: "Telefone de Contato", inputType: "tel", somenteDono: true },
-  { key: "idade", label: "Idade", inputType: "number" },
-  { key: "altura", label: "Altura (cm)", inputType: "number" },
-  { key: "peso", label: "Peso (kg)", inputType: "number" },
-  { key: "modalidade", label: "Modalidade" },
-  { key: "posicao", label: "Posição" },
-  { key: "competicoesTitulos", label: "Competições e Títulos", isTextArea: true },
-  { key: "historico", label: "Histórico", isTextArea: true },
-  { key: "midiakitUrl", label: "Link do Mídia Kit", inputType: "url", isLink: true },
-  { key: "observacoes", label: "Observações", isTextArea: true, somenteDono: true },
-  { key: "redesSocial", label: "Redes Sociais", inputType: "url", isLink: true },
+  { key: "nome", label: "Nome", grupo: "Dados pessoais" },
+  { key: "email", label: "Email", grupo: "Dados pessoais", inputType: "email", somenteDono: true },
+  { key: "dataNascimento", label: "Data de nascimento", grupo: "Dados pessoais", inputType: "date", somenteDono: true },
+  { key: "telefoneContato", label: "Telefone de contato", grupo: "Dados pessoais", inputType: "tel", somenteDono: true },
+  { key: "modalidade", label: "Modalidade", grupo: "Esporte" },
+  { key: "posicao", label: "Posição", grupo: "Esporte" },
+  { key: "idade", label: "Idade", grupo: "Esporte", inputType: "number" },
+  { key: "altura", label: "Altura (cm)", grupo: "Esporte", inputType: "number" },
+  { key: "peso", label: "Peso (kg)", grupo: "Esporte", inputType: "number" },
+  { key: "competicoesTitulos", label: "Competições e títulos", grupo: "Carreira", isTextArea: true },
+  { key: "historico", label: "Histórico", grupo: "Carreira", isTextArea: true },
+  { key: "midiakitUrl", label: "Link do mídia kit", grupo: "Links", inputType: "url", isLink: true },
+  { key: "redesSocial", label: "Redes sociais", grupo: "Links", inputType: "url", isLink: true },
+  { key: "observacoes", label: "Observações", grupo: "Anotações privadas", isTextArea: true, somenteDono: true },
 ];
 
 const marcaFieldConfigs: FieldConfig[] = [
-  { key: "nome", label: "Nome" },
-  { key: "email", label: "Email", inputType: "email", somenteDono: true },
-  { key: "produto", label: "Produto Principal" },
-  { key: "tempoMercado", label: "Tempo no Mercado (anos)", inputType: "number" },
-  { key: "atletasPatrocinados", label: "Atletas Patrocinados", isTextArea: true },
-  { key: "tipoInvestimento", label: "Tipo de Investimento" },
-  { key: "redesSocial", label: "Redes Sociais", inputType: "url", isLink: true },
+  { key: "nome", label: "Nome", grupo: "Dados da marca" },
+  { key: "email", label: "Email", grupo: "Dados da marca", inputType: "email", somenteDono: true },
+  { key: "produto", label: "Produto principal", grupo: "Dados da marca" },
+  { key: "tempoMercado", label: "Tempo no mercado (anos)", grupo: "Dados da marca", inputType: "number" },
+  { key: "tipoInvestimento", label: "Tipo de investimento", grupo: "Dados da marca" },
+  { key: "atletasPatrocinados", label: "Atletas patrocinados", grupo: "Patrocínios", isTextArea: true },
+  { key: "redesSocial", label: "Redes sociais", grupo: "Links", inputType: "url", isLink: true },
 ];
 
 // Só vira link clicável se for http(s): evita "javascript:..." digitado num campo de perfil.
@@ -104,7 +101,12 @@ function urlSegura(valor: string): string | null {
   return /^https?:\/\//i.test(valor.trim()) ? valor.trim() : null;
 }
 
-// --- CAMPOS ---
+function valorTexto(perfil: PerfilForm, key: keyof PerfilForm): string {
+  const raw = perfil[key];
+  return raw !== null && raw !== undefined ? String(raw) : "";
+}
+
+// --- CAMPOS (agrupados em cartões; leitura ou edição) ---
 const ProfileFields = ({
   perfil,
   isEditing,
@@ -120,93 +122,145 @@ const ProfileFields = ({
   handleSelectChange: (value: string, fieldName: string) => void;
   modalidadesList: string[];
 }) => {
-  const configs = (perfil.tipo === "ATLETA" ? atletaFieldConfigs : marcaFieldConfigs).filter(
-    (f) => !f.somenteDono || isMyProfile
-  );
   const editando = isEditing && isMyProfile;
 
+  // Na leitura, quem visita não vê campos vazios; o dono vê "Não informado" para saber o que falta.
+  const configs = (perfil.tipo === "ATLETA" ? atletaFieldConfigs : marcaFieldConfigs).filter((f) => {
+    if (f.somenteDono && !isMyProfile) return false;
+    if (!editando && !isMyProfile && !valorTexto(perfil, f.key)) return false;
+    return true;
+  });
+
+  const grupos = Array.from(new Set(configs.map((f) => f.grupo)));
+
+  if (grupos.length === 0) {
+    return <p className="text-muted-foreground">Este perfil ainda não tem informações.</p>;
+  }
+
   return (
-    <div className="space-y-4">
-      {configs.map((field) => {
-        const raw = perfil[field.key];
-        const value = raw !== null && raw !== undefined ? String(raw) : "";
-        const displayValue = value || "N/A";
-        const nome = field.key.toString();
-
-        if (field.key === "modalidade" && editando) {
-          return (
-            <div key={nome}>
-              <Label>{field.label}:</Label>
-              <Select value={value} onValueChange={(v) => handleSelectChange(v, nome)}>
-                <SelectTrigger className="w-full mt-1">
-                  <SelectValue placeholder="Selecione uma modalidade" />
-                </SelectTrigger>
-                <SelectContent>
-                  {modalidadesList.map((mod: string) => (
-                    <SelectItem key={mod} value={mod}>
-                      {mod.charAt(0).toUpperCase() + mod.slice(1).toLowerCase()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          );
-        }
-
-        const link = field.isLink && value ? urlSegura(value) : null;
+    <>
+      {grupos.map((grupo) => {
+        const campos = configs.filter((f) => f.grupo === grupo);
+        const idGrupo = `grupo-${grupo.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
         return (
-          <div key={nome}>
-            <Label>{field.label}:</Label>
+          <section
+            key={grupo}
+            aria-labelledby={idGrupo}
+            className="rounded-2xl border-2 border-primary bg-card p-5"
+          >
+            <h2 id={idGrupo} className="mb-4 text-xl font-extrabold">
+              {grupo}
+            </h2>
+
             {editando ? (
-              field.isTextArea ? (
-                <textarea
-                  name={nome}
-                  value={value}
-                  onChange={handleInputChange}
-                  className="mt-1 border p-2 rounded w-full min-h-[100px] bg-background"
-                />
-              ) : (
-                <input
-                  type={field.inputType || "text"}
-                  name={nome}
-                  value={value}
-                  step={field.inputType === "number" ? "any" : undefined}
-                  onChange={handleInputChange}
-                  className="mt-1 border p-2 rounded w-full bg-background"
-                />
-              )
+              <div className="grid gap-4 sm:grid-cols-2">
+                {campos.map((field) => {
+                  const nome = field.key.toString();
+                  const value = valorTexto(perfil, field.key);
+                  const idCampo = `campo-${nome}`;
+                  const idDica = `${idCampo}-dica`;
+                  const dica = field.somenteDono ? "Só você vê este dado." : undefined;
+
+                  return (
+                    <div key={nome} className={field.isTextArea ? "grid gap-1.5 sm:col-span-2" : "grid gap-1.5"}>
+                      <Label htmlFor={idCampo}>{field.label}</Label>
+
+                      {field.key === "modalidade" ? (
+                        <Select value={value} onValueChange={(v) => handleSelectChange(v, nome)}>
+                          <SelectTrigger id={idCampo} aria-describedby={dica ? idDica : undefined}>
+                            <SelectValue placeholder="Selecione uma modalidade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {modalidadesList.map((mod: string) => (
+                              <SelectItem key={mod} value={mod}>
+                                {mod.charAt(0).toUpperCase() + mod.slice(1).toLowerCase()}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : field.isTextArea ? (
+                        <Textarea
+                          id={idCampo}
+                          name={nome}
+                          value={value}
+                          onChange={handleInputChange}
+                          aria-describedby={dica ? idDica : undefined}
+                          className="min-h-[120px]"
+                        />
+                      ) : (
+                        <Input
+                          id={idCampo}
+                          type={field.inputType || "text"}
+                          name={nome}
+                          value={value}
+                          step={field.inputType === "number" ? "any" : undefined}
+                          inputMode={field.inputType === "number" ? "decimal" : undefined}
+                          onChange={handleInputChange}
+                          aria-describedby={dica ? idDica : undefined}
+                        />
+                      )}
+
+                      {dica && (
+                        <p id={idDica} className="text-sm text-muted-foreground">
+                          {dica}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              <p className="mt-1 text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-line">
-                {link ? (
-                  <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    {link}
-                  </a>
-                ) : (
-                  displayValue
-                )}
-              </p>
+              <dl className="grid gap-4 sm:grid-cols-2">
+                {campos.map((field) => {
+                  const nome = field.key.toString();
+                  const value = valorTexto(perfil, field.key);
+                  const link = field.isLink && value ? urlSegura(value) : null;
+
+                  return (
+                    <div key={nome} className={field.isTextArea ? "sm:col-span-2" : undefined}>
+                      <dt className="text-sm font-bold text-muted-foreground">
+                        {field.label}
+                        {field.somenteDono && <span className="font-normal"> (só você vê)</span>}
+                      </dt>
+                      <dd className="mt-0.5 break-words whitespace-pre-line text-base">
+                        {link ? (
+                          <a
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-primary underline"
+                          >
+                            {link}
+                          </a>
+                        ) : value ? (
+                          value
+                        ) : (
+                          <span className="text-muted-foreground">Não informado</span>
+                        )}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
             )}
-          </div>
+          </section>
         );
       })}
-    </div>
+    </>
   );
 };
 
 // --- FOTO DE PERFIL (atleta) / LOGO (marca) ---
 // Salva na hora: o servidor grava no perfil, sem depender do botão "Salvar".
+// A imagem em si aparece no cartão do topo; aqui ficam só os botões de trocar e remover.
 const FotoPerfilSection = ({
-  nome,
   tipo,
   fotoUrl,
-  isMyProfile,
   onChange,
 }: {
-  nome: string;
   tipo: "ATLETA" | "MARCA";
   fotoUrl?: string | null;
-  isMyProfile: boolean;
   onChange: (url: string | null) => void;
 }) => {
   const [enviando, setEnviando] = useState(false);
@@ -254,27 +308,60 @@ const FotoPerfilSection = ({
   };
 
   return (
-    <div className="flex flex-col items-center mb-6">
-      <UserAvatar nome={nome} url={fotoUrl} tipo={tipo} size="xl" />
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+        className="hidden"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={handleArquivo}
+        disabled={enviando}
+      />
+      <Button type="button" variant="outline" size="sm" disabled={enviando} onClick={() => inputRef.current?.click()}>
+        <Camera aria-hidden="true" />
+        {enviando ? "Enviando..." : fotoUrl ? `Trocar ${rotulo}` : `Adicionar ${rotulo}`}
+      </Button>
+      {fotoUrl && !enviando && (
+        <Button type="button" variant="ghost" size="sm" onClick={handleRemover}>
+          Remover {rotulo}
+        </Button>
+      )}
+    </div>
+  );
+};
 
-      {isMyProfile && (
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-            className="hidden"
-            onChange={handleArquivo}
-            disabled={enviando}
+// --- CARTÃO DO TOPO (foto grande + nome) ---
+const CartaoTopo = ({ perfil }: { perfil: PerfilForm }) => {
+  const local = perfil.cidade ? `${perfil.cidade}${perfil.estado ? `/${perfil.estado}` : ""}` : "";
+  const logoDeMarca = perfil.tipo === "MARCA" && !!perfil.fotoUrl && perfil.fotoUrl.trim() !== "";
+
+  const texto = (
+    <>
+      <h1 className="text-3xl font-extrabold leading-tight">{perfil.nome}</h1>
+      <p className="mt-1 text-lg font-semibold">
+        {perfil.tipo === "ATLETA" ? "Atleta" : "Marca"}
+        {local && <span> · {local}</span>}
+      </p>
+    </>
+  );
+
+  return (
+    <div className="on-dark overflow-hidden rounded-2xl border-2 border-primary bg-[#0A1633] text-white">
+      {logoDeMarca ? (
+        <>
+          <PerfilFoto nome={perfil.nome} url={perfil.fotoUrl} tipo={perfil.tipo} className="aspect-[4/3]" />
+          <div className="p-4">{texto}</div>
+        </>
+      ) : (
+        <div className="relative aspect-square sm:aspect-[4/5]">
+          <PerfilFoto nome={perfil.nome} url={perfil.fotoUrl} tipo={perfil.tipo} className="absolute inset-0" />
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-[#0A1633] via-[#0A1633]/70 to-transparent"
           />
-          <Button type="button" variant="outline" size="sm" disabled={enviando} onClick={() => inputRef.current?.click()}>
-            {enviando ? "Enviando..." : fotoUrl ? `Trocar ${rotulo}` : `Adicionar ${rotulo}`}
-          </Button>
-          {fotoUrl && !enviando && (
-            <Button type="button" variant="ghost" size="sm" onClick={handleRemover}>
-              Remover
-            </Button>
-          )}
+          <div className="absolute inset-x-0 bottom-0 p-4">{texto}</div>
         </div>
       )}
     </div>
@@ -283,10 +370,12 @@ const FotoPerfilSection = ({
 
 // --- VITRINE (ATLETAS) ---
 const VitrineSection = ({
+  nome,
   vitrineData,
   isMyProfile,
   onUploadSuccess,
 }: {
+  nome: string;
   vitrineData: VitrineResponse | null;
   isMyProfile: boolean;
   onUploadSuccess: (newData: VitrineResponse) => void;
@@ -320,59 +409,91 @@ const VitrineSection = ({
     }
   };
 
+  // O campo de arquivo fica escondido só visualmente (sr-only), para continuar acessível pelo teclado.
+  const rotuloUpload =
+    "flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary bg-secondary px-4 py-3 text-center font-bold text-primary transition-colors hover:bg-white focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-ring";
+
   return (
-    <div className="mt-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">{isMyProfile ? "Minha Vitrine" : "Vitrine"}</h2>
-      </div>
+    <section aria-labelledby="vitrine-titulo" className="rounded-2xl border-2 border-primary bg-card p-5">
+      <h2 id="vitrine-titulo" className="mb-4 text-xl font-extrabold">
+        {isMyProfile ? "Minha vitrine" : "Vitrine"}
+      </h2>
 
       {isMyProfile && (
-        <div className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-          <div className="w-full">
-            <Label htmlFor="upload-foto" className="cursor-pointer block text-center p-4 border-2 border-dashed rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-              📷 Adicionar Foto (até {LIMITE_FOTO_MB}MB)
-              <Input id="upload-foto" type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "FOTO")} disabled={uploading} />
-            </Label>
-          </div>
-          <div className="w-full">
-            <Label htmlFor="upload-video" className="cursor-pointer block text-center p-4 border-2 border-dashed rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-              🎥 Adicionar Vídeo (até {LIMITE_VIDEO_MB}MB)
-              <Input id="upload-video" type="file" accept="video/*" className="hidden" onChange={(e) => handleFileChange(e, "VIDEO")} disabled={uploading} />
-            </Label>
-          </div>
+        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+          <label htmlFor="upload-foto" className={rotuloUpload}>
+            <Camera className="h-5 w-5 shrink-0" aria-hidden="true" />
+            Adicionar foto (até {LIMITE_FOTO_MB}MB)
+            <input
+              id="upload-foto"
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(e) => handleFileChange(e, "FOTO")}
+              disabled={uploading}
+            />
+          </label>
+          <label htmlFor="upload-video" className={rotuloUpload}>
+            <Video className="h-5 w-5 shrink-0" aria-hidden="true" />
+            Adicionar vídeo (até {LIMITE_VIDEO_MB}MB)
+            <input
+              id="upload-video"
+              type="file"
+              accept="video/*"
+              className="sr-only"
+              onChange={(e) => handleFileChange(e, "VIDEO")}
+              disabled={uploading}
+            />
+          </label>
         </div>
       )}
 
       <div>
-        <h3 className="font-semibold mb-2">Fotos</h3>
+        <h3 className="mb-2 text-lg font-extrabold">Fotos</h3>
         {vitrineData?.fotos && vitrineData.fotos.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {vitrineData.fotos.map((url, index) => (
-              <div key={index} className="aspect-square relative rounded-lg overflow-hidden border">
-                <img src={url} alt={`Vitrine ${index + 1}`} loading="lazy" className="object-cover w-full h-full hover:scale-105 transition-transform duration-300" />
-              </div>
+              <li key={index} className="relative aspect-square overflow-hidden rounded-xl border-2 border-primary">
+                <img
+                  src={url}
+                  alt={`Foto ${index + 1} da vitrine de ${nome}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <p className="text-muted-foreground text-sm italic">Nenhuma foto.</p>
+          <p className="text-muted-foreground">
+            {isMyProfile ? "Você ainda não adicionou fotos." : "Nenhuma foto."}
+          </p>
         )}
       </div>
 
-      <div>
-        <h3 className="font-semibold mb-2">Vídeos</h3>
+      <div className="mt-6">
+        <h3 className="mb-2 text-lg font-extrabold">Vídeos</h3>
         {vitrineData?.videos && vitrineData.videos.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {vitrineData.videos.map((url, index) => (
-              <div key={index} className="aspect-video bg-black rounded-lg overflow-hidden">
-                <video src={url} controls preload="metadata" playsInline className="w-full h-full" />
-              </div>
+              <li key={index} className="aspect-video overflow-hidden rounded-xl border-2 border-primary bg-black">
+                <video
+                  src={url}
+                  controls
+                  preload="metadata"
+                  playsInline
+                  aria-label={`Vídeo ${index + 1} da vitrine de ${nome}`}
+                  className="h-full w-full"
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <p className="text-muted-foreground text-sm italic">Nenhum vídeo.</p>
+          <p className="text-muted-foreground">
+            {isMyProfile ? "Você ainda não adicionou vídeos." : "Nenhum vídeo."}
+          </p>
         )}
       </div>
-    </div>
+    </section>
   );
 };
 
@@ -580,58 +701,82 @@ export default function Profile() {
     carregar(); // descarta o que foi digitado
   };
 
-  if (loading) { return <div className="p-8 pt-6 text-center">Carregando...</div>; }
-  if (error) {
+
+  if (loading) {
     return (
-      <div className="p-8 pt-6 text-center space-y-4">
-        <p className="text-red-500">{error}</p>
-        <Button variant="outline" onClick={() => navigate("/dashboard")}>← Voltar</Button>
+      <div role="status" aria-live="polite">
+        <span className="sr-only">Carregando perfil...</span>
+        <div aria-hidden="true" className="grid gap-6 md:grid-cols-[22rem_1fr]">
+          <Skeleton className="aspect-square rounded-2xl sm:aspect-[4/5]" />
+          <div className="space-y-6">
+            <Skeleton className="h-48 rounded-2xl" />
+            <Skeleton className="h-48 rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }
-  if (!perfil) { return <div className="p-8 pt-6 text-center">Perfil não encontrado.</div>; }
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 py-10 text-center">
+        <h1 className="text-2xl font-extrabold">Não foi possível carregar</h1>
+        <p className="font-medium text-destructive">{error}</p>
+        <Button variant="outline" onClick={() => navigate("/dashboard")}>
+          <ArrowLeft aria-hidden="true" />
+          Voltar
+        </Button>
+      </div>
+    );
+  }
+
+  if (!perfil) {
+    return <p className="py-10 text-center text-lg">Perfil não encontrado.</p>;
+  }
 
   const isAtleta = perfil.tipo === "ATLETA";
 
+  const botoesEdicao = isMyProfile && (
+    <div className="flex flex-wrap items-center gap-2">
+      {isEditing ? (
+        <>
+          <Button type="button" variant="cta" onClick={handleSaveProfile} disabled={saving}>
+            {saving ? "Salvando..." : "Salvar"}
+          </Button>
+          <Button type="button" variant="outline" onClick={handleCancelar} disabled={saving}>
+            Cancelar
+          </Button>
+        </>
+      ) : (
+        <Button type="button" onClick={() => setIsEditing(true)}>
+          <Pencil aria-hidden="true" />
+          Editar perfil
+        </Button>
+      )}
+    </div>
+  );
+
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex flex-col min-h-screen">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate("/dashboard")}>← Voltar</Button>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Perfil de {perfil.nome}</h1>
-        </div>
-        {isMyProfile && (
-          <div className="flex items-center space-x-2">
-            {isEditing ? (
-              <>
-                <Button onClick={handleSaveProfile} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
-                <Button variant="outline" onClick={handleCancelar} disabled={saving}>Cancelar</Button>
-              </>
-            ) : (
-              <Button onClick={() => setIsEditing(true)}>Editar</Button>
-            )}
-          </div>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {!isMyProfile ? (
+          <Button type="button" variant="outline" onClick={() => navigate("/dashboard")}>
+            <ArrowLeft aria-hidden="true" />
+            Voltar
+          </Button>
+        ) : (
+          <span />
         )}
+        {botoesEdicao}
       </div>
 
-      <Card className="flex flex-col flex-1">
-        <CardHeader>
-          <CardTitle>Detalhes do Perfil</CardTitle>
-          <CardDescription>
-            {isAtleta ? "Informações do Atleta" : "Informações da Marca"}
-            {perfil.cidade ? ` · ${perfil.cidade}${perfil.estado ? `/${perfil.estado}` : ""}` : ""}
-          </CardDescription>
-        </CardHeader>
+      <div className="grid items-start gap-6 md:grid-cols-[22rem_1fr]">
+        <div className="md:sticky md:top-24">
+          <CartaoTopo perfil={perfil} />
+          {isMyProfile && <FotoPerfilSection tipo={perfil.tipo} fotoUrl={perfil.fotoUrl} onChange={handleFotoChange} />}
+        </div>
 
-        <CardContent>
-          <FotoPerfilSection
-            nome={perfil.nome}
-            tipo={perfil.tipo}
-            fotoUrl={perfil.fotoUrl}
-            isMyProfile={isMyProfile}
-            onChange={handleFotoChange}
-          />
-
+        <div className="min-w-0 space-y-6">
           <ProfileFields
             perfil={perfil}
             isEditing={isEditing}
@@ -642,17 +787,17 @@ export default function Profile() {
           />
 
           {isAtleta && (
-            <>
-              <div className="my-6 border-t" />
-              <VitrineSection
-                vitrineData={vitrineData}
-                isMyProfile={isMyProfile}
-                onUploadSuccess={setVitrineData}
-              />
-            </>
+            <VitrineSection
+              nome={perfil.nome}
+              vitrineData={vitrineData}
+              isMyProfile={isMyProfile}
+              onUploadSuccess={setVitrineData}
+            />
           )}
-        </CardContent>
-      </Card>
+
+          {isEditing && isMyProfile && <div className="flex justify-end">{botoesEdicao}</div>}
+        </div>
+      </div>
     </div>
   );
 }

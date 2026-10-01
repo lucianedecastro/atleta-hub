@@ -226,29 +226,50 @@ export default function Dashboard() {
                 ? `${profile.cidade}${profile.estado ? `/${profile.estado}` : ""}`
                 : "";
               const detalhes = detalhesDoPerfil(profile);
+              const logoDeMarca =
+                profile.tipoUsuario === UserType.MARCA && !!profile.fotoUrl && profile.fotoUrl.trim() !== "";
+              const textoDoCard = (
+                <>
+                  <h3 className="text-2xl font-extrabold leading-tight">{profile.nome}</h3>
+                  <p className="mt-1 font-semibold">
+                    {profile.tipoUsuario === UserType.ATLETA ? "Atleta" : "Marca"}
+                    {local && <span> · {local}</span>}
+                  </p>
+                  {detalhes && <p className="text-white/90">{detalhes}</p>}
+                </>
+              );
 
               return (
                 <li key={profile.id}>
                   <article className="overflow-hidden rounded-2xl border-2 border-primary bg-card">
-                    <div className="on-dark relative aspect-[4/5] text-white">
-                      <PerfilFoto
-                        nome={profile.nome}
-                        url={profile.fotoUrl}
-                        tipo={profile.tipoUsuario}
-                        className="absolute inset-0"
-                      />
-                      <div
-                        aria-hidden="true"
-                        className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-[#0A1633] via-[#0A1633]/70 to-transparent"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 p-4">
-                        <h3 className="text-2xl font-extrabold leading-tight">{profile.nome}</h3>
-                        <p className="mt-1 font-semibold">
-                          {profile.tipoUsuario === UserType.ATLETA ? "Atleta" : "Marca"}
-                          {local && <span> · {local}</span>}
-                        </p>
-                        {detalhes && <p className="text-white/90">{detalhes}</p>}
-                      </div>
+                    <div className="on-dark relative aspect-square bg-[#0A1633] text-white sm:aspect-[4/5]">
+                      {/* Logo de marca: fica inteira sobre branco e o texto vai numa faixa sólida embaixo.
+                          Foto de atleta (ou sem foto): o texto fica sobre a imagem, com degradê escuro. */}
+                      {logoDeMarca ? (
+                        <div className="flex h-full flex-col">
+                          <PerfilFoto
+                            nome={profile.nome}
+                            url={profile.fotoUrl}
+                            tipo={profile.tipoUsuario}
+                            className="min-h-0 flex-1"
+                          />
+                          <div className="bg-[#0A1633] p-4">{textoDoCard}</div>
+                        </div>
+                      ) : (
+                        <>
+                          <PerfilFoto
+                            nome={profile.nome}
+                            url={profile.fotoUrl}
+                            tipo={profile.tipoUsuario}
+                            className="absolute inset-0"
+                          />
+                          <div
+                            aria-hidden="true"
+                            className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-[#0A1633] via-[#0A1633]/70 to-transparent"
+                          />
+                          <div className="absolute inset-x-0 bottom-0 p-4">{textoDoCard}</div>
+                        </>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-3 p-4">

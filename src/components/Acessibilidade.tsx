@@ -87,13 +87,13 @@ export function Acessibilidade() {
   const inativo = "bg-background text-foreground hover:bg-secondary";
 
   return (
-    <div className="fixed bottom-20 left-4 z-50 md:bottom-4 print:hidden">
+    <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] left-2 z-50 md:bottom-4 md:left-4 print:hidden">
       {aberto && (
         <div
           id="painel-acessibilidade"
           role="group"
           aria-label="Opções de acessibilidade"
-          className="mb-2 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-background p-4 text-foreground shadow-lg"
+          className="mb-2 w-72 max-w-[calc(100vw-1rem)] rounded-lg border border-border bg-background p-4 text-foreground shadow-lg"
         >
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-base font-semibold">Acessibilidade</h2>
@@ -185,9 +185,9 @@ export function Acessibilidade() {
         aria-expanded={aberto}
         aria-controls="painel-acessibilidade"
         aria-label="Opções de acessibilidade"
-        className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-background bg-foreground text-background shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-background bg-foreground text-background shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        <Accessibility className="h-6 w-6" aria-hidden="true" />
+        <Accessibility className="h-5 w-5" aria-hidden="true" />
       </button>
     </div>
   );

@@ -10,15 +10,16 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { PaginaPublica } from "@/components/PaginaPublica";
+
+const cartao = "rounded-2xl border-2 border-primary bg-card p-6";
+const tituloCartao = "mb-2 flex items-center gap-2 text-lg font-extrabold";
+const icone = "h-5 w-5 shrink-0 text-primary";
 
 const Arquitetura = () => {
   return (
-    <div className="container mx-auto px-4 py-20">
-      <h1 className="text-4xl font-bold mb-6">
-        Arquitetura da Plataforma AtletaHub
-      </h1>
-
-      <p className="text-lg text-muted-foreground mb-8 max-w-3xl">
+    <PaginaPublica titulo="Arquitetura da Plataforma AtletaHub">
+      <p className="mb-8 max-w-3xl text-lg text-muted-foreground">
         Esta seção descreve a arquitetura de software do{" "}
         <strong>AtletaHub</strong>, destacando as decisões técnicas adotadas,
         a organização em camadas, os fluxos de comunicação e os princípios de
@@ -27,8 +28,8 @@ const Arquitetura = () => {
       </p>
 
       {/* Visão Geral */}
-      <h2 className="text-2xl font-semibold mb-6">Visão Geral da Arquitetura</h2>
-      <p className="text-lg text-muted-foreground mb-10 max-w-3xl">
+      <h2 className="mb-6 mt-12 text-2xl font-extrabold">Visão Geral da Arquitetura</h2>
+      <p className="mb-10 max-w-3xl text-lg text-muted-foreground">
         O AtletaHub foi concebido seguindo uma arquitetura{" "}
         <strong>cliente-servidor</strong>, com separação clara entre frontend e
         backend, adotando boas práticas de engenharia de software, como
@@ -39,14 +40,12 @@ const Arquitetura = () => {
       </p>
 
       {/* Camadas */}
-      <h2 className="text-2xl font-semibold mb-6">
-        Organização em Camadas
-      </h2>
+      <h2 className="mb-6 mt-12 text-2xl font-extrabold">Organização em Camadas</h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Layers className="w-5 h-5" /> Camada de Apresentação
+      <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={cartao}>
+          <h3 className={tituloCartao}>
+            <Layers className={icone} aria-hidden="true" /> Camada de Apresentação
           </h3>
           <p className="text-muted-foreground">
             Desenvolvida em <strong>React + Vite</strong>, é responsável pela
@@ -56,9 +55,9 @@ const Arquitetura = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Server className="w-5 h-5" /> Camada de Aplicação
+        <div className={cartao}>
+          <h3 className={tituloCartao}>
+            <Server className={icone} aria-hidden="true" /> Camada de Aplicação
           </h3>
           <p className="text-muted-foreground">
             Implementada em <strong>Java com Spring Boot</strong>, concentra a
@@ -67,9 +66,9 @@ const Arquitetura = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Database className="w-5 h-5" /> Camada de Persistência
+        <div className={cartao}>
+          <h3 className={tituloCartao}>
+            <Database className={icone} aria-hidden="true" /> Camada de Persistência
           </h3>
           <p className="text-muted-foreground">
             Responsável pelo armazenamento dos dados, utilizando banco de dados
@@ -81,14 +80,12 @@ const Arquitetura = () => {
       </div>
 
       {/* Comunicação e Tradução */}
-      <h2 className="text-2xl font-semibold mb-6">
-        Comunicação e Tradução Simultânea
-      </h2>
+      <h2 className="mb-6 mt-12 text-2xl font-extrabold">Comunicação e Tradução Simultânea</h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5" /> Sistema de Mensagens
+      <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className={cartao}>
+          <h3 className={tituloCartao}>
+            <MessageSquare className={icone} aria-hidden="true" /> Sistema de Mensagens
           </h3>
           <p className="text-muted-foreground">
             O chat é integrado ao perfil do atleta, permitindo comunicação
@@ -97,9 +94,9 @@ const Arquitetura = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Languages className="w-5 h-5" /> Tradução Bidirecional
+        <div className={cartao}>
+          <h3 className={tituloCartao}>
+            <Languages className={icone} aria-hidden="true" /> Tradução Bidirecional
           </h3>
           <p className="text-muted-foreground">
             A arquitetura suporta tradução automática bidirecional no backend,
@@ -111,14 +108,12 @@ const Arquitetura = () => {
       </div>
 
       {/* Infraestrutura */}
-      <h2 className="text-2xl font-semibold mb-6">
-        Infraestrutura e Implantação
-      </h2>
+      <h2 className="mb-6 mt-12 text-2xl font-extrabold">Infraestrutura e Implantação</h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Cloud className="w-5 h-5" /> Ambiente em Nuvem
+      <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={cartao}>
+          <h3 className={tituloCartao}>
+            <Cloud className={icone} aria-hidden="true" /> Ambiente em Nuvem
           </h3>
           <p className="text-muted-foreground">
             A plataforma passou por processo de migração de infraestrutura,
@@ -127,9 +122,9 @@ const Arquitetura = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5" /> Segurança
+        <div className={cartao}>
+          <h3 className={tituloCartao}>
+            <ShieldCheck className={icone} aria-hidden="true" /> Segurança
           </h3>
           <p className="text-muted-foreground">
             Implementação de autenticação, controle de acesso e validações no
@@ -138,9 +133,9 @@ const Arquitetura = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
-          <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Workflow className="w-5 h-5" /> Escalabilidade
+        <div className={cartao}>
+          <h3 className={tituloCartao}>
+            <Workflow className={icone} aria-hidden="true" /> Escalabilidade
           </h3>
           <p className="text-muted-foreground">
             A separação em serviços e camadas permite evolução incremental,
@@ -151,8 +146,8 @@ const Arquitetura = () => {
       </div>
 
       {/* Conclusão */}
-      <h2 className="text-2xl font-semibold mb-6">Considerações Finais</h2>
-      <p className="text-lg text-muted-foreground mb-10 max-w-3xl">
+      <h2 className="mb-6 mt-12 text-2xl font-extrabold">Considerações Finais</h2>
+      <p className="mb-10 max-w-3xl text-lg text-muted-foreground">
         A arquitetura do AtletaHub foi projetada para equilibrar robustez
         técnica, impacto social e viabilidade de crescimento. Ao integrar
         comunicação, tradução automática e critérios de inclusão em uma
@@ -161,11 +156,11 @@ const Arquitetura = () => {
       </p>
 
       <div className="mt-12 text-center">
-        <Link to="/">
-          <Button variant="outline">← Voltar para a Página Inicial</Button>
-        </Link>
+        <Button asChild variant="outline">
+          <Link to="/">← Voltar para a Página Inicial</Link>
+        </Button>
       </div>
-    </div>
+    </PaginaPublica>
   );
 };
 
