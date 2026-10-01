@@ -27,6 +27,7 @@ function App() {
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="/chat/:matchId" element={<Chat />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,5 +1,3 @@
-// Dashboard.tsx - CORRIGIDO E COMPLETO
-
 import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,31 +19,32 @@ import {
   UserDetailsResponse,
   MatchResponse,
   TipoInteresse,
-  InteresseRequest
+  InteresseRequest,
 } from "@/services/apiService";
+import { getErrorMessage } from "@/lib/errors";
+import axios from "axios";
 
 // Enums para tipos de usuário
 enum UserType {
-  ATLETA = 'ATLETA',
-  MARCA = 'MARCA',
-  ADMIN = 'ADMIN',
+  ATLETA = "ATLETA",
+  MARCA = "MARCA",
 }
 
 type PerfilDetalhes = UserDetailsResponse;
 type Match = MatchResponse;
 
 export default function Dashboard() {
-  // AQUI: Pegamos a função de logout do nosso contexto de autenticação
   const { userData, logout } = useAuth();
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<PerfilDetalhes[]>([]);
   const [userMatches, setUserMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState<number | null>(null);
 
   useEffect(() => {
     if (!userData) {
-      navigate("/");
+      navigate("/auth?mode=login");
       return;
     }
 
@@ -55,22 +54,34 @@ export default function Dashboard() {
 
       try {
         const oppositeUserType =
-          userData.userType === UserType.ATLETA.toLowerCase() ? UserType.MARCA : UserType.ATLETA;
-        
-        const [profilesResponse, matchesResponse] = await Promise.all([
+          userData.userType === "atleta" ? UserType.MARCA : UserType.ATLETA;
+
+        const [profilesResponse, matchesResponse, sentResponse] = await Promise.all([
           users.getByType(oppositeUserType),
           matches.getMatches(),
+          interests.getSent(),
         ]);
-        
-        setProfiles(profilesResponse.data);
-        setUserMatches(matchesResponse.data);
 
+        // Não mostra de novo quem eu já curti nem quem já virou match.
+        const jaCurtidos = new Set(sentResponse.data.map((i) => i.idDestino));
+        const jaMatch = new Set<number>();
+        matchesResponse.data.forEach((m) => {
+          jaMatch.add(m.idUsuarioA === userData.id ? m.idUsuarioB : m.idUsuarioA);
+        });
+
+        setProfiles(
+          profilesResponse.data.filter(
+            (p) => p.id !== userData.id && !jaCurtidos.has(p.id) && !jaMatch.has(p.id)
+          )
+        );
+        setUserMatches(matchesResponse.data);
       } catch (err) {
         console.error("Erro ao carregar dados do dashboard:", err);
-        setError("Não foi possível carregar os dados do dashboard.");
+        const mensagem = getErrorMessage(err, "Não foi possível carregar os dados do dashboard.");
+        setError(mensagem);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar os dados do dashboard.",
+          description: mensagem,
           variant: "destructive",
         });
       } finally {
@@ -81,35 +92,55 @@ export default function Dashboard() {
     fetchData();
   }, [userData, navigate]);
 
-  const handleDemonstrarInteresse = useCallback(async (targetProfileId: number) => {
-    if (!userData) return;
-    try {
-      const payload: InteresseRequest = {
-        idDestino: targetProfileId,
-        tipoInteresse: TipoInteresse.CURTIR,
-      };
-      await interests.sendInterest(payload);
-      toast({
-        title: "Sucesso",
-        description: "Interesse demonstrado com sucesso!",
-      });
-      setProfiles((prevProfiles) =>
-        prevProfiles.filter((profile) => profile.id !== targetProfileId)
-      );
-    } catch (err) {
-      console.error("Erro ao demonstrar interesse:", err);
-      toast({
-        title: "Erro",
-        description: "Não foi possível demonstrar interesse.",
-        variant: "destructive",
-      });
-    }
-  }, [userData]);
+  const handleDemonstrarInteresse = useCallback(
+    async (targetProfileId: number) => {
+      if (!userData || enviando !== null) return;
+      setEnviando(targetProfileId);
 
-  // AQUI: Criamos a função de logout
+      const removerCard = () =>
+        setProfiles((prev) => prev.filter((p) => p.id !== targetProfileId));
+
+      try {
+        const payload: InteresseRequest = {
+          idDestino: targetProfileId,
+          tipoInteresse: TipoInteresse.CURTIR,
+        };
+        await interests.sendInterest(payload);
+        removerCard();
+
+        // Se o outro lado também já tinha curtido, nasceu um match: atualiza a lista.
+        try {
+          const novos = await matches.getMatches();
+          if (novos.data.length > userMatches.length) {
+            toast({ title: "É um match! 🎉", description: "Vocês já podem conversar." });
+          } else {
+            toast({ title: "Interesse enviado!", description: "Se for recíproco, vira um match." });
+          }
+          setUserMatches(novos.data);
+        } catch {
+          toast({ title: "Interesse enviado!" });
+        }
+      } catch (err) {
+        console.error("Erro ao demonstrar interesse:", err);
+        // 409 = já tinha curtido: o card não deve continuar na tela.
+        if (axios.isAxiosError(err) && err.response?.status === 409) {
+          removerCard();
+        }
+        toast({
+          title: "Não foi possível curtir",
+          description: getErrorMessage(err, "Não foi possível demonstrar interesse."),
+          variant: "destructive",
+        });
+      } finally {
+        setEnviando(null);
+      }
+    },
+    [userData, enviando, userMatches.length]
+  );
+
   const handleLogout = () => {
-    logout(); // Chama a função do seu auth-context
-    navigate('/auth?mode=login'); // Redireciona para a página de login
+    logout();
+    navigate("/auth?mode=login");
   };
 
   if (loading) {
@@ -117,18 +148,22 @@ export default function Dashboard() {
   }
 
   if (error) {
-    return <div className="p-8 pt-6 text-center text-red-600 font-medium">{error}</div>;
+    return (
+      <div className="p-8 pt-6 text-center space-y-4">
+        <p className="text-red-600 font-medium">{error}</p>
+        <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
+      </div>
+    );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        
-        {/* AQUI: Adicionamos os botões de ação do usuário */}
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h2>
+
         <div className="flex items-center space-x-2">
           <Link to={`/profile/${userData?.id}`}>
-            <Button>Ver Meu Perfil</Button>
+            <Button>Meu Perfil</Button>
           </Link>
           <Button variant="outline" onClick={handleLogout}>Sair</Button>
         </div>
@@ -139,7 +174,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle>Matches</CardTitle>
             <CardDescription>
-              Você tem {userMatches.length} {userMatches.length === 1 ? 'match' : 'matches'} no momento.
+              Você tem {userMatches.length} {userMatches.length === 1 ? "match" : "matches"} no momento.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -169,7 +204,10 @@ export default function Dashboard() {
             <Card key={profile.id}>
               <CardHeader>
                 <CardTitle>{profile.nome}</CardTitle>
-                <CardDescription>{profile.tipoUsuario}</CardDescription>
+                <CardDescription>
+                  {profile.tipoUsuario === UserType.ATLETA ? "Atleta" : "Marca"}
+                  {profile.cidade ? ` · ${profile.cidade}${profile.estado ? `/${profile.estado}` : ""}` : ""}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 {profile.tipoUsuario === UserType.ATLETA ? (
@@ -197,8 +235,11 @@ export default function Dashboard() {
                 )}
               </CardContent>
               <CardFooter className="flex gap-2">
-                <Button onClick={() => handleDemonstrarInteresse(profile.id)}>
-                  Curtir
+                <Button
+                  disabled={enviando === profile.id}
+                  onClick={() => handleDemonstrarInteresse(profile.id)}
+                >
+                  {enviando === profile.id ? "Enviando..." : "Curtir"}
                 </Button>
                 <Link to={`/profile/${profile.id}`}>
                   <Button variant="outline">Ver Perfil</Button>
@@ -207,7 +248,9 @@ export default function Dashboard() {
             </Card>
           ))
         ) : (
-          <p className="col-span-full text-center text-lg text-muted-foreground mt-4">Nenhum perfil disponível para interação no momento.</p>
+          <p className="col-span-full text-center text-lg text-muted-foreground mt-4">
+            Nenhum perfil novo disponível no momento.
+          </p>
         )}
       </div>
     </div>

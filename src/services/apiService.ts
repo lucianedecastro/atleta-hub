@@ -2,11 +2,13 @@ import axios, { AxiosError } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-console.log('API_BASE_URL atual no frontend:', API_BASE_URL);
+if (!API_BASE_URL) {
+  console.error('A variável VITE_API_URL não está definida (Vercel / arquivo .env).');
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 30000, // 30s: o Render (plano free) pode demorar para acordar
 });
 
 // =====================
@@ -28,18 +30,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (axios.isAxiosError(error) && error.response) {
-      const { status } = error.response;
+    // Só 401 = sessão inválida/expirada. O 403 agora significa "logado, mas sem permissão
+    // para isso" e NÃO deve derrubar a sessão. Chamadas de /auth/ (login errado) também não.
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      const url = error.config?.url ?? '';
+      const ehChamadaDeAuth = url.includes('/auth/');
+      const jaEstaNaTelaDeAuth =
+        typeof window !== 'undefined' && window.location.pathname.startsWith('/auth');
 
-      if (
-        (status === 401 || status === 403) &&
-        typeof window !== 'undefined' &&
-        !window.location.pathname.includes('/auth')
-      ) {
+      if (!ehChamadaDeAuth && !jaEstaNaTelaDeAuth && typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-
-        console.warn('Sessão expirada. Redirecionando para login.');
         window.location.href = '/auth?mode=login';
       }
     }
@@ -62,15 +63,13 @@ const health = {
 };
 
 /**
- * Função utilitária para ser usada antes de login/registro
- * Evita erro de cold start em UX crítica
+ * Chame antes de login/cadastro para evitar erro de cold start.
  */
 export const wakeUpApi = async () => {
   try {
     await health.ping();
-    console.log('Backend acordado com sucesso 🟢');
-  } catch (error) {
-    console.warn('Falha ao acordar backend (seguindo fluxo mesmo assim)');
+  } catch {
+    // segue o fluxo mesmo assim
   }
 };
 
@@ -98,38 +97,67 @@ export interface RegisterRequest {
   nome: string;
   email: string;
   senha: string;
-  tipoUsuario: 'ATLETA' | 'MARCA' | 'ADMIN';
+  // ADMIN não pode mais ser escolhido no cadastro público
+  tipoUsuario: 'ATLETA' | 'MARCA';
   cidade: string;
   estado: string;
   idioma: string;
 }
 
-// -------- User --------
+// -------- User (perfil público) --------
 export interface UserDetailsResponse {
   id: number;
   nome: string;
-  email: string;
+  // O e-mail só vem para o próprio usuário (ou admin)
+  email?: string | null;
   tipoUsuario: 'ATLETA' | 'MARCA' | 'ADMIN';
-  idade: number | null;
-  modalidade: string | null;
-  competicoesTitulos: string | null;
-  redesSocial: string | null;
-  historico: string | null;
-  produto: string | null;
-  tempoMercado: number | null;
-  atletasPatrocinados: string | null;
-  tipoInvestimento: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  idade?: number | null;
+  modalidade?: string | null;
+  competicoesTitulos?: string | null;
+  redesSocial?: string | null;
+  historico?: string | null;
+  produto?: string | null;
+  tempoMercado?: number | null;
+  atletasPatrocinados?: string | null;
+  tipoInvestimento?: string | null;
   altura?: number | null;
   peso?: number | null;
+  posicao?: string | null;
+  midiakitUrl?: string | null;
+  logoUrl?: string | null;
+}
+
+// -------- Perfil (dados completos, só do próprio usuário) --------
+export interface PerfilAtletaResponse {
+  idPerfilAtleta?: number;
+  usuarioId?: number;
+  idade?: number | null;
+  altura?: number | null;
+  peso?: number | null;
+  modalidade?: string | null;
+  competicoesTitulos?: string | null;
+  redesSocial?: string | null;
+  historico?: string | null;
   posicao?: string | null;
   observacoes?: string | null;
   dataNascimento?: string | null;
   telefoneContato?: string | null;
   midiakitUrl?: string | null;
+}
+
+export interface PerfilMarcaResponse {
+  idPerfilMarca?: number;
+  idUsuario?: number;
+  produto?: string | null;
+  tempoMercado?: number | null;
+  atletasPatrocinados?: string | null;
+  tipoInvestimento?: string | null;
+  redesSocial?: string | null;
   logoUrl?: string | null;
 }
 
-// -------- Profile --------
 export interface UpdateAtletaProfileRequest {
   nome?: string;
   email?: string;
@@ -148,6 +176,8 @@ export interface UpdateAtletaProfileRequest {
 }
 
 export interface UpdateMarcaProfileRequest {
+  nome?: string;
+  email?: string;
   produto?: string | null;
   tempoMercado?: number | null;
   atletasPatrocinados?: string | null;
@@ -197,9 +227,9 @@ export interface MatchResponse {
 }
 
 // -------- Messages --------
+// O remetente agora é identificado pelo token no servidor (não se envia mais idRemetente).
 export interface SendMessageRequest {
   idMatch: number;
-  idRemetente: number;
   texto: string;
 }
 
@@ -233,7 +263,7 @@ export interface MensagemTraducaoResponse {
 
 const auth = {
   login: (data: LoginRequest) => api.post<LoginResponse>('/auth/login', data),
-  register: (data: RegisterRequest) => api.post<string>('/auth/registrar', data),
+  register: (data: RegisterRequest) => api.post<{ message: string }>('/auth/registrar', data),
 };
 
 const users = {
@@ -244,13 +274,13 @@ const users = {
 };
 
 const profile = {
-  getAtletaProfile: () => api.get<UpdateAtletaProfileRequest>('/perfil/atleta'),
+  getAtletaProfile: () => api.get<PerfilAtletaResponse>('/perfil/atleta'),
   updateAtletaProfile: (data: UpdateAtletaProfileRequest) =>
-    api.put('/perfil/atleta', data),
+    api.put<PerfilAtletaResponse>('/perfil/atleta', data),
 
-  getMarcaProfile: () => api.get<UpdateMarcaProfileRequest>('/perfil/marca'),
+  getMarcaProfile: () => api.get<PerfilMarcaResponse>('/perfil/marca'),
   updateMarcaProfile: (data: UpdateMarcaProfileRequest) =>
-    api.put('/perfil/marca', data),
+    api.put<PerfilMarcaResponse>('/perfil/marca', data),
 };
 
 // 📸 Módulo Vitrine
@@ -258,8 +288,6 @@ const vitrine = {
   getMyVitrine: () => api.get<VitrineResponse>('/vitrine/me'),
   getVitrineByUserId: (userId: number) =>
     api.get<VitrineResponse>(`/vitrine/${userId}`),
-  updateVitrine: (data: VitrineResponse) =>
-    api.put<VitrineResponse>('/vitrine', data),
 
   uploadMidia: (file: File, tipo: 'FOTO' | 'VIDEO') => {
     const formData = new FormData();
@@ -270,6 +298,7 @@ const vitrine = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 120000, // vídeo em rede móvel pode demorar
     });
   },
 };

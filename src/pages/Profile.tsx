@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/services/auth-context";
 import {
@@ -10,6 +10,7 @@ import {
   UpdateMarcaProfileRequest,
   VitrineResponse,
 } from "@/services/apiService";
+import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,43 +24,116 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 
-// Enums, Interfaces e Configs
-enum UserType { ATLETA = "ATLETA", MARCA = "MARCA" }
+// Limites iguais aos do servidor
+const LIMITE_FOTO_MB = 10;
+const LIMITE_VIDEO_MB = 50;
 
-interface AtletaProfileData { id: number; nome: string; email: string; data_nascimento: string | null; telefone_contato: string | null; idade: number | null; altura: number | null; peso: number | null; modalidade: string | null; posicao: string | null; competicoes_titulos: string | null; historico: string | null; midiakit_url: string | null; observacoes: string | null; redes_social: string | null; }
-interface MarcaProfileData { id: number; nome: string; email: string; produto: string | null; tempo_mercado: number | null; atletas_patrocinados: string | null; tipo_investimento: string | null; redes_social: string | null; logoUrl?: string | null; }
+// Modelo único do perfil, sempre em camelCase (igual ao que a API devolve).
+// Antes a tela usava nomes em snake_case (data_nascimento, competicoes_titulos...) que a API não
+// envia: no perfil do próprio usuário quase tudo aparecia como "N/A" e o nome nem carregava.
+interface PerfilForm {
+  id: number;
+  tipo: "ATLETA" | "MARCA";
+  nome: string;
+  email?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  // atleta
+  dataNascimento?: string | null;
+  telefoneContato?: string | null;
+  idade?: number | null;
+  altura?: number | null;
+  peso?: number | null;
+  modalidade?: string | null;
+  posicao?: string | null;
+  competicoesTitulos?: string | null;
+  historico?: string | null;
+  midiakitUrl?: string | null;
+  observacoes?: string | null;
+  redesSocial?: string | null;
+  // marca
+  produto?: string | null;
+  tempoMercado?: number | null;
+  atletasPatrocinados?: string | null;
+  tipoInvestimento?: string | null;
+  logoUrl?: string | null;
+}
 
-interface FieldConfig<T> { key: keyof T; label: string; inputType?: React.HTMLInputTypeAttribute; isTextArea?: boolean; }
+interface FieldConfig {
+  key: keyof PerfilForm;
+  label: string;
+  inputType?: React.HTMLInputTypeAttribute;
+  isTextArea?: boolean;
+  somenteDono?: boolean; // dado privado: só aparece no perfil do próprio usuário
+  isLink?: boolean;
+}
 
-const atletaFieldConfigs: FieldConfig<AtletaProfileData>[] = [ { key: "nome", label: "Nome" }, { key: "email", label: "Email", inputType: "email" }, { key: "data_nascimento", label: "Data de Nascimento", inputType: "date" }, { key: "telefone_contato", label: "Telefone de Contato", inputType: "tel" }, { key: "idade", label: "Idade", inputType: "number" }, { key: "altura", label: "Altura (cm)", inputType: "number" }, { key: "peso", label: "Peso (kg)", inputType: "number" }, { key: "modalidade", label: "Modalidade" }, { key: "posicao", label: "Posição" }, { key: "competicoes_titulos", label: "Competições e Títulos", isTextArea: true }, { key: "historico", label: "Histórico", isTextArea: true }, { key: "midiakit_url", label: "Link do Mídia Kit", inputType: "url" }, { key: "observacoes", label: "Observações", isTextArea: true }, { key: "redes_social", label: "Redes Sociais", inputType: "url" }, ];
-const marcaFieldConfigs: FieldConfig<MarcaProfileData>[] = [ { key: "nome", label: "Nome" }, { key: "email", label: "Email", inputType: "email" }, { key: "produto", label: "Produto Principal" }, { key: "tempo_mercado", label: "Tempo no Mercado (anos)", inputType: "number" }, { key: "atletas_patrocinados", label: "Atletas Patrocinados", isTextArea: true }, { key: "tipo_investimento", label: "Tipo de Investimento" }, { key: "redes_social", label: "Redes Sociais", inputType: "url" }, ];
+const atletaFieldConfigs: FieldConfig[] = [
+  { key: "nome", label: "Nome" },
+  { key: "email", label: "Email", inputType: "email", somenteDono: true },
+  { key: "dataNascimento", label: "Data de Nascimento", inputType: "date", somenteDono: true },
+  { key: "telefoneContato", label: "Telefone de Contato", inputType: "tel", somenteDono: true },
+  { key: "idade", label: "Idade", inputType: "number" },
+  { key: "altura", label: "Altura (cm)", inputType: "number" },
+  { key: "peso", label: "Peso (kg)", inputType: "number" },
+  { key: "modalidade", label: "Modalidade" },
+  { key: "posicao", label: "Posição" },
+  { key: "competicoesTitulos", label: "Competições e Títulos", isTextArea: true },
+  { key: "historico", label: "Histórico", isTextArea: true },
+  { key: "midiakitUrl", label: "Link do Mídia Kit", inputType: "url", isLink: true },
+  { key: "observacoes", label: "Observações", isTextArea: true, somenteDono: true },
+  { key: "redesSocial", label: "Redes Sociais", inputType: "url", isLink: true },
+];
 
-function isAtletaProfileData(profile: any): profile is AtletaProfileData { return "modalidade" in profile; }
+const marcaFieldConfigs: FieldConfig[] = [
+  { key: "nome", label: "Nome" },
+  { key: "email", label: "Email", inputType: "email", somenteDono: true },
+  { key: "produto", label: "Produto Principal" },
+  { key: "tempoMercado", label: "Tempo no Mercado (anos)", inputType: "number" },
+  { key: "atletasPatrocinados", label: "Atletas Patrocinados", isTextArea: true },
+  { key: "tipoInvestimento", label: "Tipo de Investimento" },
+  { key: "redesSocial", label: "Redes Sociais", inputType: "url", isLink: true },
+];
 
-// --- COMPONENTE DE CAMPOS (MANTIDO) ---
-const ProfileFields = ({ profile, isEditing, isMyProfile, handleInputChange, handleSelectChange, modalidadesList }: {
-  profile: AtletaProfileData | MarcaProfileData;
+// Só vira link clicável se for http(s): evita "javascript:..." digitado num campo de perfil.
+function urlSegura(valor: string): string | null {
+  return /^https?:\/\//i.test(valor.trim()) ? valor.trim() : null;
+}
+
+// --- CAMPOS ---
+const ProfileFields = ({
+  perfil,
+  isEditing,
+  isMyProfile,
+  handleInputChange,
+  handleSelectChange,
+  modalidadesList,
+}: {
+  perfil: PerfilForm;
   isEditing: boolean;
   isMyProfile: boolean;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSelectChange: (value: string, fieldName: string) => void;
   modalidadesList: string[];
 }) => {
-  const configs = isAtletaProfileData(profile) ? atletaFieldConfigs : marcaFieldConfigs;
+  const configs = (perfil.tipo === "ATLETA" ? atletaFieldConfigs : marcaFieldConfigs).filter(
+    (f) => !f.somenteDono || isMyProfile
+  );
+  const editando = isEditing && isMyProfile;
+
   return (
     <div className="space-y-4">
       {configs.map((field) => {
-        const value = profile[field.key] !== null && profile[field.key] !== undefined ? profile[field.key].toString(): "";
-        const displayValue = profile[field.key]?.toString() || "N/A";
-        
-        if (field.key === 'modalidade' && isEditing && isMyProfile) {
+        const raw = perfil[field.key];
+        const value = raw !== null && raw !== undefined ? String(raw) : "";
+        const displayValue = value || "N/A";
+        const nome = field.key.toString();
+
+        if (field.key === "modalidade" && editando) {
           return (
-            <div key={field.key.toString()}>
-              <Label className="capitalize">{field.label}:</Label>
-              <Select
-                value={value}
-                onValueChange={(newValue) => handleSelectChange(newValue, field.key.toString())}
-              >
+            <div key={nome}>
+              <Label>{field.label}:</Label>
+              <Select value={value} onValueChange={(v) => handleSelectChange(v, nome)}>
                 <SelectTrigger className="w-full mt-1">
                   <SelectValue placeholder="Selecione uma modalidade" />
                 </SelectTrigger>
@@ -75,31 +149,34 @@ const ProfileFields = ({ profile, isEditing, isMyProfile, handleInputChange, han
           );
         }
 
+        const link = field.isLink && value ? urlSegura(value) : null;
+
         return (
-          <div key={field.key.toString()}>
-            <Label className="capitalize">{field.label}:</Label>
-            {isEditing && isMyProfile ? (
+          <div key={nome}>
+            <Label>{field.label}:</Label>
+            {editando ? (
               field.isTextArea ? (
                 <textarea
-                  name={field.key.toString()}
+                  name={nome}
                   value={value}
                   onChange={handleInputChange}
-                  className="mt-1 border p-2 rounded w-full min-h-[100px]"
+                  className="mt-1 border p-2 rounded w-full min-h-[100px] bg-background"
                 />
               ) : (
                 <input
                   type={field.inputType || "text"}
-                  name={field.key.toString()}
+                  name={nome}
                   value={value}
+                  step={field.inputType === "number" ? "any" : undefined}
                   onChange={handleInputChange}
-                  className="mt-1 border p-2 rounded w-full"
+                  className="mt-1 border p-2 rounded w-full bg-background"
                 />
               )
             ) : (
-              <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                {(field.inputType === "url" && displayValue !== "N/A") ? (
-                  <a href={displayValue} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    {displayValue}
+              <p className="mt-1 text-sm text-gray-700 dark:text-gray-300 break-words whitespace-pre-line">
+                {link ? (
+                  <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    {link}
                   </a>
                 ) : (
                   displayValue
@@ -113,117 +190,130 @@ const ProfileFields = ({ profile, isEditing, isMyProfile, handleInputChange, han
   );
 };
 
-// --- COMPONENTE LOGO UPLOAD (MARCAS) ---
-const LogoUploadSection = ({ logoUrl, isEditing, onLogoUpdate }: {
-    logoUrl?: string | null,
-    isEditing: boolean,
-    onLogoUpdate: (url: string) => void
-}) => {
-    const [uploading, setUploading] = useState(false);
-
-    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        try {
-            setUploading(true);
-            const response = await vitrineApi.uploadMidia(file, 'FOTO');
-            if (response.data.fotos && response.data.fotos.length > 0) {
-                const newLogoUrl = response.data.fotos[response.data.fotos.length - 1];
-                onLogoUpdate(newLogoUrl);
-                toast({ title: "Logo atualizada!", description: "Não esqueça de salvar o perfil." });
-            }
-        } catch (error) {
-            console.error(error);
-            toast({ title: "Erro no upload", variant: "destructive" });
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    return (
-        <div className="flex flex-col items-center mb-6">
-            <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
-                {logoUrl ? (
-                    <img src={logoUrl} alt="Logo da Marca" className="w-full h-full object-cover" />
-                ) : (
-                    <span className="text-4xl text-gray-400">🏢</span>
-                )}
-            </div>
-            
-            {isEditing && (
-                <div className="mt-2">
-                    <Label htmlFor="logo-upload" className="cursor-pointer text-sm text-blue-600 hover:underline">
-                        {uploading ? "Enviando..." : "Alterar Logo"}
-                        <Input 
-                            id="logo-upload" 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={handleLogoUpload}
-                            disabled={uploading}
-                        />
-                    </Label>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// --- COMPONENTE VITRINE (ATLETAS) ---
-const VitrineSection = ({ vitrineData, isMyProfile, onUploadSuccess }: { 
-  vitrineData: VitrineResponse | null, 
-  isMyProfile: boolean,
-  onUploadSuccess: (newData: VitrineResponse) => void
+// --- LOGO (MARCAS) ---
+const LogoUploadSection = ({
+  logoUrl,
+  isEditing,
+  onLogoUpdate,
+}: {
+  logoUrl?: string | null;
+  isEditing: boolean;
+  onLogoUpdate: (url: string) => void;
 }) => {
   const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>, tipo: 'FOTO' | 'VIDEO') => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > LIMITE_FOTO_MB * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: `Limite: ${LIMITE_FOTO_MB}MB.`, variant: "destructive" });
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const response = await vitrineApi.uploadMidia(file, "FOTO");
+      if (response.data.fotos && response.data.fotos.length > 0) {
+        const newLogoUrl = response.data.fotos[response.data.fotos.length - 1];
+        onLogoUpdate(newLogoUrl);
+        toast({ title: "Logo atualizada!", description: "Não esqueça de salvar o perfil." });
+      }
+    } catch (error) {
+      toast({ title: "Erro no upload", description: getErrorMessage(error), variant: "destructive" });
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center mb-6">
+      <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
+        {logoUrl ? (
+          <img src={logoUrl} alt="Logo da Marca" className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-4xl text-gray-400">🏢</span>
+        )}
+      </div>
+
+      {isEditing && (
+        <div className="mt-2">
+          <Label htmlFor="logo-upload" className="cursor-pointer text-sm text-blue-600 hover:underline">
+            {uploading ? "Enviando..." : "Alterar Logo"}
+            <Input
+              id="logo-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoUpload}
+              disabled={uploading}
+            />
+          </Label>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- VITRINE (ATLETAS) ---
+const VitrineSection = ({
+  vitrineData,
+  isMyProfile,
+  onUploadSuccess,
+}: {
+  vitrineData: VitrineResponse | null;
+  isMyProfile: boolean;
+  onUploadSuccess: (newData: VitrineResponse) => void;
+}) => {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>, tipo: "FOTO" | "VIDEO") => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // CORREÇÃO: Limite aumentado para 100MB para casar com o Backend
-    const maxSize = tipo === 'FOTO' ? 10 * 1024 * 1024 : 100 * 1024 * 1024;
-    
-    if (file.size > maxSize) {
-      toast({ title: "Arquivo muito grande", description: `Limite: ${tipo === 'FOTO' ? '10MB' : '100MB'}.`, variant: "destructive" });
+    const limiteMb = tipo === "FOTO" ? LIMITE_FOTO_MB : LIMITE_VIDEO_MB;
+
+    if (file.size > limiteMb * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: `Limite: ${limiteMb}MB.`, variant: "destructive" });
+      event.target.value = "";
       return;
     }
 
     try {
       setUploading(true);
       toast({ title: "Enviando...", description: "Processando arquivo..." });
-      
+
       const response = await vitrineApi.uploadMidia(file, tipo);
       onUploadSuccess(response.data);
       toast({ title: "Sucesso!", description: "Adicionado à vitrine." });
     } catch (error) {
-      console.error(error);
-      toast({ title: "Erro", description: "Falha no upload.", variant: "destructive" });
+      toast({ title: "Erro no upload", description: getErrorMessage(error, "Falha no upload."), variant: "destructive" });
     } finally {
       setUploading(false);
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
   return (
     <div className="mt-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">Minha Vitrine</h3>
+        <h3 className="text-xl font-bold">{isMyProfile ? "Minha Vitrine" : "Vitrine"}</h3>
       </div>
 
       {isMyProfile && (
-        <div className="flex gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+        <div className="flex flex-col sm:flex-row gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
           <div className="w-full">
             <Label htmlFor="upload-foto" className="cursor-pointer block text-center p-4 border-2 border-dashed rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-              📷 Adicionar Foto
-              <Input id="upload-foto" type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'FOTO')} disabled={uploading} />
+              📷 Adicionar Foto (até {LIMITE_FOTO_MB}MB)
+              <Input id="upload-foto" type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, "FOTO")} disabled={uploading} />
             </Label>
           </div>
           <div className="w-full">
             <Label htmlFor="upload-video" className="cursor-pointer block text-center p-4 border-2 border-dashed rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-              🎥 Adicionar Vídeo
-              <Input id="upload-video" type="file" accept="video/*" className="hidden" onChange={(e) => handleFileChange(e, 'VIDEO')} disabled={uploading} />
+              🎥 Adicionar Vídeo (até {LIMITE_VIDEO_MB}MB)
+              <Input id="upload-video" type="file" accept="video/*" className="hidden" onChange={(e) => handleFileChange(e, "VIDEO")} disabled={uploading} />
             </Label>
           </div>
         </div>
@@ -235,7 +325,7 @@ const VitrineSection = ({ vitrineData, isMyProfile, onUploadSuccess }: {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {vitrineData.fotos.map((url, index) => (
               <div key={index} className="aspect-square relative rounded-lg overflow-hidden border">
-                <img src={url} alt={`Vitrine ${index}`} className="object-cover w-full h-full hover:scale-105 transition-transform duration-300" />
+                <img src={url} alt={`Vitrine ${index + 1}`} loading="lazy" className="object-cover w-full h-full hover:scale-105 transition-transform duration-300" />
               </div>
             ))}
           </div>
@@ -250,7 +340,7 @@ const VitrineSection = ({ vitrineData, isMyProfile, onUploadSuccess }: {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {vitrineData.videos.map((url, index) => (
               <div key={index} className="aspect-video bg-black rounded-lg overflow-hidden">
-                <video src={url} controls className="w-full h-full" />
+                <video src={url} controls preload="metadata" playsInline className="w-full h-full" />
               </div>
             ))}
           </div>
@@ -267,140 +357,231 @@ export default function Profile() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
 
-  const [profileData, setProfileData] = useState<AtletaProfileData | MarcaProfileData | null>(null);
+  const [perfil, setPerfil] = useState<PerfilForm | null>(null);
   const [vitrineData, setVitrineData] = useState<VitrineResponse | null>(null);
-  
+
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalidadesList, setModalidadesList] = useState<string[]>([]);
 
   const isMyProfile = useMemo(() => userData?.id.toString() === id, [userData, id]);
 
+  const carregar = useCallback(async () => {
+    if (!userData || !id) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const idNumero = parseInt(id, 10);
+      if (Number.isNaN(idNumero)) throw new Error("ID inválido");
+
+      // 1. Dados públicos (nome, tipo, cidade...). O e-mail só vem se for o próprio usuário.
+      const base = (await users.getById(idNumero)).data;
+      const tipo: "ATLETA" | "MARCA" = base.tipoUsuario === "MARCA" ? "MARCA" : "ATLETA";
+
+      let montado: PerfilForm = {
+        id: base.id,
+        tipo,
+        nome: base.nome,
+        email: base.email ?? null,
+        cidade: base.cidade ?? null,
+        estado: base.estado ?? null,
+        idade: base.idade ?? null,
+        altura: base.altura ?? null,
+        peso: base.peso ?? null,
+        modalidade: base.modalidade ?? null,
+        posicao: base.posicao ?? null,
+        competicoesTitulos: base.competicoesTitulos ?? null,
+        historico: base.historico ?? null,
+        midiakitUrl: base.midiakitUrl ?? null,
+        redesSocial: base.redesSocial ?? null,
+        produto: base.produto ?? null,
+        tempoMercado: base.tempoMercado ?? null,
+        atletasPatrocinados: base.atletasPatrocinados ?? null,
+        tipoInvestimento: base.tipoInvestimento ?? null,
+        logoUrl: base.logoUrl ?? null,
+      };
+
+      // 2. No meu perfil, completa com os dados privados (telefone, nascimento, observações)
+      if (isMyProfile) {
+        if (tipo === "ATLETA") {
+          const p = (await profileApi.getAtletaProfile()).data;
+          montado = {
+            ...montado,
+            idade: p.idade ?? null,
+            altura: p.altura ?? null,
+            peso: p.peso ?? null,
+            modalidade: p.modalidade ?? null,
+            posicao: p.posicao ?? null,
+            competicoesTitulos: p.competicoesTitulos ?? null,
+            historico: p.historico ?? null,
+            midiakitUrl: p.midiakitUrl ?? null,
+            observacoes: p.observacoes ?? null,
+            redesSocial: p.redesSocial ?? null,
+            dataNascimento: p.dataNascimento ?? null,
+            telefoneContato: p.telefoneContato ?? null,
+          };
+        } else {
+          const p = (await profileApi.getMarcaProfile()).data;
+          montado = {
+            ...montado,
+            produto: p.produto ?? null,
+            tempoMercado: p.tempoMercado ?? null,
+            atletasPatrocinados: p.atletasPatrocinados ?? null,
+            tipoInvestimento: p.tipoInvestimento ?? null,
+            redesSocial: p.redesSocial ?? null,
+            logoUrl: p.logoUrl ?? null,
+          };
+        }
+      }
+
+      setPerfil(montado);
+
+      // 3. A lista de modalidades é opcional: se falhar, o resto da tela continua funcionando
+      modalidades
+        .getAll()
+        .then((r) => setModalidadesList(r.data))
+        .catch(() => setModalidadesList([]));
+
+      // 4. Vitrine (só atletas)
+      if (tipo === "ATLETA") {
+        try {
+          const vitrineRes = isMyProfile
+            ? await vitrineApi.getMyVitrine()
+            : await vitrineApi.getVitrineByUserId(base.id);
+          setVitrineData(vitrineRes.data);
+        } catch {
+          setVitrineData(null); // vitrine indisponível não impede de ver o perfil
+        }
+      } else {
+        setVitrineData(null);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar dados:", err);
+      const mensagem = getErrorMessage(err, "Erro ao carregar perfil.");
+      setError(mensagem);
+      toast({ title: "Erro", description: mensagem, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [userData, id, isMyProfile]);
+
   useEffect(() => {
     if (!userData) {
-      navigate("/");
+      navigate("/auth?mode=login");
       return;
     }
-
-    const fetchProfileAndData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // 1. Busca Dados do Perfil (SQL)
-        let profilePromise;
-        if (isMyProfile) {
-          profilePromise = userData.userType === 'atleta'
-            ? profileApi.getAtletaProfile()
-            : profileApi.getMarcaProfile();
-        } else if (id) {
-          profilePromise = users.getById(parseInt(id, 10));
-        } else {
-          throw new Error("ID do perfil não fornecido.");
-        }
-
-        const [profileResponse, modalidadesResponse] = await Promise.all([
-          profilePromise,
-          modalidades.getAll()
-        ]);
-        
-        setProfileData(profileResponse.data);
-        setModalidadesList(modalidadesResponse.data);
-
-        // 2. LÓGICA CORRIGIDA: Busca Vitrine (Mongo) se o perfil carregado for de um ATLETA
-        // Independente se sou eu (Atleta) ou se sou uma Marca visitando
-        if (isAtletaProfileData(profileResponse.data)) {
-            try {
-                let vitrineRes;
-                if (isMyProfile) {
-                    // Minha própria vitrine
-                    vitrineRes = await vitrineApi.getMyVitrine();
-                } else {
-                    // Visitando outro atleta -> Usa o endpoint novo /vitrine/{id}
-                    vitrineRes = await vitrineApi.getVitrineByUserId(profileResponse.data.id);
-                }
-                setVitrineData(vitrineRes.data);
-            } catch (err) {
-                console.log("Vitrine não encontrada ou vazia.");
-            }
-        }
-
-      } catch (err) {
-        console.error("Erro ao buscar dados:", err);
-        setError("Erro ao carregar perfil.");
-        toast({ title: "Erro", description: "Falha ao carregar dados.", variant: "destructive" });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfileAndData();
-  }, [id, userData, isMyProfile, navigate]);
+    carregar();
+  }, [userData, navigate, carregar]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    setProfileData((prev) => {
+    setPerfil((prev) => {
       if (!prev) return null;
-      let parsedValue: string | number | null = value;
       if (type === "number") {
-        const numValue = parseFloat(value);
-        parsedValue = isNaN(numValue) ? null : numValue;
-      } else if (value === "") {
-        parsedValue = null;
+        const numero = parseFloat(value);
+        return { ...prev, [name]: Number.isNaN(numero) ? null : numero };
       }
-      return { ...prev, [name]: parsedValue };
+      // Texto vazio é enviado como "" (o servidor agora entende como "apagar o campo")
+      return { ...prev, [name]: value };
     });
   };
 
   const handleSelectChange = (value: string, fieldName: string) => {
-    setProfileData((prev) => {
-      if (!prev) return null;
-      return { ...prev, [fieldName]: value };
-    });
+    setPerfil((prev) => (prev ? { ...prev, [fieldName]: value } : null));
   };
 
   const handleLogoUpdate = (newLogoUrl: string) => {
-      setProfileData((prev) => {
-          if (!prev) return null;
-          return { ...prev, logoUrl: newLogoUrl } as MarcaProfileData;
-      });
+    setPerfil((prev) => (prev ? { ...prev, logoUrl: newLogoUrl } : null));
   };
 
   const handleSaveProfile = async () => {
-    if (!profileData || !userData) return;
+    if (!perfil || !userData || saving) return;
+
+    if (!perfil.nome || !perfil.nome.trim()) {
+      toast({ title: "Confira os dados", description: "O nome não pode ficar vazio.", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
     try {
-      if (isAtletaProfileData(profileData)) {
-        await profileApi.updateAtletaProfile(profileData as UpdateAtletaProfileRequest);
+      if (perfil.tipo === "ATLETA") {
+        const payload: UpdateAtletaProfileRequest = {
+          nome: perfil.nome,
+          email: perfil.email ?? undefined,
+          idade: perfil.idade,
+          altura: perfil.altura,
+          peso: perfil.peso,
+          modalidade: perfil.modalidade,
+          posicao: perfil.posicao ?? "",
+          competicoesTitulos: perfil.competicoesTitulos ?? "",
+          historico: perfil.historico ?? "",
+          midiakitUrl: perfil.midiakitUrl ?? "",
+          observacoes: perfil.observacoes ?? "",
+          redesSocial: perfil.redesSocial ?? "",
+          // data vazia não pode ser enviada como "" (o servidor espera uma data ou nada)
+          dataNascimento: perfil.dataNascimento || null,
+          telefoneContato: perfil.telefoneContato ?? "",
+        };
+        await profileApi.updateAtletaProfile(payload);
       } else {
-        await profileApi.updateMarcaProfile(profileData as UpdateMarcaProfileRequest);
+        const payload: UpdateMarcaProfileRequest = {
+          nome: perfil.nome,
+          email: perfil.email ?? undefined,
+          produto: perfil.produto ?? "",
+          tempoMercado: perfil.tempoMercado,
+          atletasPatrocinados: perfil.atletasPatrocinados ?? "",
+          tipoInvestimento: perfil.tipoInvestimento ?? "",
+          redesSocial: perfil.redesSocial ?? "",
+          logoUrl: perfil.logoUrl ?? "",
+        };
+        await profileApi.updateMarcaProfile(payload);
       }
+
       toast({ title: "Sucesso", description: "Perfil atualizado!" });
       setIsEditing(false);
+      await carregar(); // recarrega do servidor (ex.: altura em metros é convertida para cm)
     } catch (err) {
-      console.error("Erro ao salvar:", err);
-      toast({ title: "Erro", description: "Falha ao salvar.", variant: "destructive" });
+      toast({ title: "Não foi possível salvar", description: getErrorMessage(err, "Falha ao salvar."), variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) { return <div className="p-8 pt-6 text-center">Carregando...</div>; }
-  if (error) { return <div className="p-8 pt-6 text-center text-red-500">{error}</div>; }
-  if (!profileData) { return <div className="p-8 pt-6 text-center">Perfil não encontrado.</div>; }
+  const handleCancelar = () => {
+    setIsEditing(false);
+    carregar(); // descarta o que foi digitado
+  };
 
-  const isAtleta = isAtletaProfileData(profileData);
+  if (loading) { return <div className="p-8 pt-6 text-center">Carregando...</div>; }
+  if (error) {
+    return (
+      <div className="p-8 pt-6 text-center space-y-4">
+        <p className="text-red-500">{error}</p>
+        <Button variant="outline" onClick={() => navigate("/dashboard")}>← Voltar</Button>
+      </div>
+    );
+  }
+  if (!perfil) { return <div className="p-8 pt-6 text-center">Perfil não encontrado.</div>; }
+
+  const isAtleta = perfil.tipo === "ATLETA";
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6 flex flex-col h-screen">
-      <div className="flex items-center justify-between space-y-2">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex flex-col min-h-screen">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate('/dashboard')}>← Voltar</Button>
-          <h2 className="text-3xl font-bold tracking-tight">Perfil de {profileData.nome}</h2>
+          <Button variant="outline" onClick={() => navigate("/dashboard")}>← Voltar</Button>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Perfil de {perfil.nome}</h2>
         </div>
         {isMyProfile && (
           <div className="flex items-center space-x-2">
             {isEditing ? (
               <>
-                <Button onClick={handleSaveProfile}>Salvar</Button>
-                <Button variant="outline" onClick={() => setIsEditing(false)}>Cancelar</Button>
+                <Button onClick={handleSaveProfile} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
+                <Button variant="outline" onClick={handleCancelar} disabled={saving}>Cancelar</Button>
               </>
             ) : (
               <Button onClick={() => setIsEditing(true)}>Editar</Button>
@@ -409,46 +590,43 @@ export default function Profile() {
         )}
       </div>
 
-      <Card className="flex flex-col flex-1"> 
+      <Card className="flex flex-col flex-1">
         <CardHeader>
           <CardTitle>Detalhes do Perfil</CardTitle>
           <CardDescription>
             {isAtleta ? "Informações do Atleta" : "Informações da Marca"}
+            {perfil.cidade ? ` · ${perfil.cidade}${perfil.estado ? `/${perfil.estado}` : ""}` : ""}
           </CardDescription>
         </CardHeader>
-        
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <div className="h-full px-6 py-4 overflow-y-auto max-h-[calc(100vh-200px)]"> 
-            
-            {!isAtleta && (
-                <LogoUploadSection 
-                    logoUrl={(profileData as MarcaProfileData).logoUrl}
-                    isEditing={isEditing && isMyProfile}
-                    onLogoUpdate={handleLogoUpdate}
-                />
-            )}
 
-            <ProfileFields
-              profile={profileData}
-              isEditing={isEditing}
-              isMyProfile={isMyProfile}
-              handleInputChange={handleInputChange}
-              handleSelectChange={handleSelectChange}
-              modalidadesList={modalidadesList}
+        <CardContent>
+          {!isAtleta && (
+            <LogoUploadSection
+              logoUrl={perfil.logoUrl}
+              isEditing={isEditing && isMyProfile}
+              onLogoUpdate={handleLogoUpdate}
             />
+          )}
 
-            {isAtleta && (
-                <>
-                    <div className="my-6 border-t" />
-                    <VitrineSection 
-                        vitrineData={vitrineData} 
-                        isMyProfile={isMyProfile}
-                        onUploadSuccess={setVitrineData} 
-                    />
-                </>
-            )}
+          <ProfileFields
+            perfil={perfil}
+            isEditing={isEditing}
+            isMyProfile={isMyProfile}
+            handleInputChange={handleInputChange}
+            handleSelectChange={handleSelectChange}
+            modalidadesList={modalidadesList}
+          />
 
-          </div>
+          {isAtleta && (
+            <>
+              <div className="my-6 border-t" />
+              <VitrineSection
+                vitrineData={vitrineData}
+                isMyProfile={isMyProfile}
+                onUploadSuccess={setVitrineData}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

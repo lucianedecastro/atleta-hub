@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,11 +8,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/use-toast";
+import { useAuth } from "@/services/auth-context";
 import {
   matches,
   messages,
   messageTranslations,
+  MatchResponse,
 } from "@/services/apiService";
+import { getErrorMessage } from "@/lib/errors";
 
 interface Message {
   id: number;
@@ -22,147 +26,212 @@ interface Message {
   traducao?: string;
 }
 
-interface Match {
-  id: number;
-  nomeOutroUsuario: string;
-}
+// Atualiza a conversa a cada 15s enquanto a aba está aberta (até existir chat em tempo real).
+const INTERVALO_ATUALIZACAO_MS = 15000;
 
 export default function Chat() {
   const navigate = useNavigate();
+  const { matchId } = useParams<{ matchId: string }>();
+  const { userData } = useAuth();
 
-  const [matchSelecionado, setMatchSelecionado] = useState<Match | null>(null);
-  const [listaMatches, setListaMatches] = useState<Match[]>([]);
+  const [listaMatches, setListaMatches] = useState<MatchResponse[]>([]);
+  const [carregandoMatches, setCarregandoMatches] = useState(true);
   const [mensagens, setMensagens] = useState<Message[]>([]);
   const [novaMensagem, setNovaMensagem] = useState("");
+  const [enviando, setEnviando] = useState(false);
   const [traduzindo, setTraduzindo] = useState<number | null>(null);
 
-  const usuario = JSON.parse(localStorage.getItem("user") || "{}");
+  const fimDasMensagens = useRef<HTMLDivElement | null>(null);
+
+  // O match aberto vem da URL (/chat/:matchId). Antes a URL era ignorada e a conversa
+  // nunca abria ao clicar num match do Dashboard.
+  const matchSelecionado = useMemo(
+    () => listaMatches.find((m) => String(m.id) === matchId) ?? null,
+    [listaMatches, matchId]
+  );
 
   // =========================
-  // 🔹 Carregar matches
+  // 🔹 Proteção + matches
   // =========================
   useEffect(() => {
-    matches.getMatches().then((res) => {
-      setListaMatches(res.data);
-    });
-  }, []);
+    if (!userData) {
+      navigate("/auth?mode=login");
+      return;
+    }
+
+    matches
+      .getMatches()
+      .then((res) => setListaMatches(res.data))
+      .catch((err) =>
+        toast({
+          title: "Erro ao carregar conversas",
+          description: getErrorMessage(err),
+          variant: "destructive",
+        })
+      )
+      .finally(() => setCarregandoMatches(false));
+  }, [userData, navigate]);
 
   // =========================
-  // 🔹 Carregar mensagens
+  // 🔹 Mensagens (carga + atualização periódica)
   // =========================
+  const carregarMensagens = useCallback(
+    async (id: number, silencioso: boolean) => {
+      try {
+        const res = await messages.getByMatchId(id);
+        setMensagens((anteriores) => {
+          // Preserva traduções já exibidas
+          const traducoes = new Map(anteriores.map((m) => [m.id, m.traducao]));
+          return res.data.map((m) => ({ ...m, traducao: traducoes.get(m.id) }));
+        });
+      } catch (err) {
+        if (!silencioso) {
+          toast({
+            title: "Não foi possível abrir a conversa",
+            description: getErrorMessage(err),
+            variant: "destructive",
+          });
+          navigate("/dashboard");
+        }
+      }
+    },
+    [navigate]
+  );
+
   useEffect(() => {
-    if (!matchSelecionado) return;
+    if (!matchSelecionado) {
+      setMensagens([]);
+      return;
+    }
 
-    messages.getByMatchId(matchSelecionado.id).then((res) => {
-      setMensagens(res.data);
-    });
-  }, [matchSelecionado]);
+    carregarMensagens(matchSelecionado.id, false);
+
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        carregarMensagens(matchSelecionado.id, true);
+      }
+    }, INTERVALO_ATUALIZACAO_MS);
+
+    return () => window.clearInterval(timer);
+  }, [matchSelecionado, carregarMensagens]);
+
+  useEffect(() => {
+    fimDasMensagens.current?.scrollIntoView({ behavior: "smooth" });
+  }, [mensagens.length]);
 
   // =========================
   // 🔹 Enviar mensagem
   // =========================
   const enviarMensagem = async () => {
-    if (!matchSelecionado || !novaMensagem.trim()) return;
+    const texto = novaMensagem.trim();
+    if (!matchSelecionado || !texto || enviando) return;
 
-    const res = await messages.send({
-      idMatch: matchSelecionado.id,
-      idRemetente: usuario.id,
-      texto: novaMensagem,
-    });
+    try {
+      setEnviando(true);
+      // O remetente é identificado pelo token no servidor.
+      const res = await messages.send({
+        idMatch: matchSelecionado.id,
+        texto,
+      });
 
-    setMensagens((prev) => [...prev, res.data]);
-    setNovaMensagem("");
+      setMensagens((prev) => [...prev, res.data]);
+      setNovaMensagem("");
+    } catch (err) {
+      toast({
+        title: "Mensagem não enviada",
+        description: getErrorMessage(err),
+        variant: "destructive",
+      });
+    } finally {
+      setEnviando(false);
+    }
   };
 
   // =========================
   // 🔤 Traduzir mensagem
   // =========================
   const traduzirMensagem = async (mensagem: Message) => {
+    // Já traduzida: só volta ao original (sem chamar o backend)
+    if (mensagem.traducao) {
+      setMensagens((prev) =>
+        prev.map((m) => (m.id === mensagem.id ? { ...m, traducao: undefined } : m))
+      );
+      return;
+    }
+
     try {
       setTraduzindo(mensagem.id);
 
-      // 1️⃣ SE JÁ TEM TRADUÇÃO: apenas remove/oculta (lógica UI)
-      if (mensagem.traducao) {
-        setMensagens((prev) =>
-          prev.map((m) =>
-            m.id === mensagem.id
-              ? { ...m, traducao: undefined } // Remove a tradução da UI
-              : m
-          )
-        );
-        return; // ⬅️ NÃO chama o backend!
-      }
-
-      // 2️⃣ SE NÃO TEM TRADUÇÃO: detecta e chama backend
-      // Detecção SIMPLES no frontend - caracteres portugueses
+      // Detecção simples PT↔EN
       const temCaracteresPortugueses = /[áàâãéèêíïóôõöúçñ]/i.test(mensagem.texto);
-      
-      // Define direção PT↔EN
       const idiomaOrigem = temCaracteresPortugueses ? "pt" : "en";
       const idiomaDestino = temCaracteresPortugueses ? "en" : "pt";
 
-      // 3️⃣ Chama backend (MESMO endpoint, parâmetros diferentes)
       const res = await messageTranslations.translate({
         idMensagem: mensagem.id,
         idiomaOrigem,
         idiomaDestino,
       });
 
-      // 4️⃣ Atualiza UI com nova tradução
       setMensagens((prev) =>
         prev.map((m) =>
-          m.id === mensagem.id
-            ? { ...m, traducao: res.data.textoTraduzido }
-            : m
+          m.id === mensagem.id ? { ...m, traducao: res.data.textoTraduzido } : m
         )
       );
+    } catch (err) {
+      toast({
+        title: "Tradução indisponível",
+        description: getErrorMessage(err, "Não foi possível traduzir agora."),
+        variant: "destructive",
+      });
     } finally {
       setTraduzindo(null);
     }
   };
 
+  const idDoUsuario = userData?.id;
+
   return (
-    <div className="flex h-[calc(100vh-4rem)] gap-6 p-8">
-      {/* ================= SIDEBAR ================= */}
-      <Card className="w-64">
+    <div className="flex h-[100dvh] gap-4 p-3 md:p-8">
+      {/* ================= LISTA DE CONVERSAS =================
+          No celular, a lista some quando uma conversa está aberta (e vice-versa). */}
+      <Card className={`${matchId ? "hidden md:flex" : "flex"} w-full md:w-64 md:shrink-0 flex-col`}>
         <CardHeader className="space-y-3">
           <CardTitle>Conversas</CardTitle>
 
-          {/* 🔙 BOTÃO VOLTAR */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate("/dashboard")}
-          >
+          <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
             ← Voltar para o Dashboard
           </Button>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-2">
-          {listaMatches.length > 0 ? (
+        <CardContent className="flex flex-col gap-2 overflow-y-auto">
+          {carregandoMatches ? (
+            <p className="text-sm text-muted-foreground">Carregando...</p>
+          ) : listaMatches.length > 0 ? (
             listaMatches.map((match) => (
               <Button
                 key={match.id}
-                variant={
-                  matchSelecionado?.id === match.id ? "default" : "outline"
-                }
+                variant={matchSelecionado?.id === match.id ? "default" : "outline"}
                 className="justify-start"
-                onClick={() => setMatchSelecionado(match)}
+                onClick={() => navigate(`/chat/${match.id}`)}
               >
                 {match.nomeOutroUsuario}
               </Button>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma conversa disponível.
-            </p>
+            <p className="text-sm text-muted-foreground">Nenhuma conversa disponível.</p>
           )}
         </CardContent>
       </Card>
 
-      {/* ================= CHAT MAIN ================= */}
-      <Card className="flex-1 flex flex-col">
-        <CardHeader>
+      {/* ================= CONVERSA ================= */}
+      <Card className={`${matchId ? "flex" : "hidden md:flex"} flex-1 min-w-0 flex-col`}>
+        <CardHeader className="space-y-2">
+          <div className="md:hidden">
+            <Button variant="outline" size="sm" onClick={() => navigate("/chat")}>
+              ← Conversas
+            </Button>
+          </div>
           <CardTitle>
             {matchSelecionado
               ? `Chat com ${matchSelecionado.nomeOutroUsuario}`
@@ -170,23 +239,20 @@ export default function Chat() {
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="flex-1 flex flex-col justify-between">
-          {/* MENSAGENS */}
+        <CardContent className="flex-1 flex flex-col justify-between min-h-0">
           <div className="flex-1 space-y-4 overflow-y-auto mb-4 pr-2">
             {matchSelecionado ? (
               mensagens.length > 0 ? (
                 mensagens.map((msg) => {
-                  const isMine = msg.idRemetente === usuario.id;
+                  const isMine = msg.idRemetente === idDoUsuario;
 
                   return (
                     <div
                       key={msg.id}
-                      className={`flex ${
-                        isMine ? "justify-end" : "justify-start"
-                      }`}
+                      className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[70%] rounded-lg p-3 text-sm ${
+                        className={`max-w-[85%] md:max-w-[70%] rounded-lg p-3 text-sm break-words ${
                           isMine
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted"
@@ -204,8 +270,8 @@ export default function Chat() {
                           >
                             {traduzindo === msg.id
                               ? "Traduzindo..."
-                              : msg.traducao 
-                                ? "Ver Original"  // 🔄 Texto do botão muda
+                              : msg.traducao
+                                ? "Ver Original"
                                 : "Traduzir"}
                           </Button>
                         )}
@@ -214,27 +280,39 @@ export default function Chat() {
                   );
                 })
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma mensagem ainda.
-                </p>
+                <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda.</p>
               )
             ) : (
               <p className="text-sm text-muted-foreground">
-                Selecione uma conversa para começar.
+                {carregandoMatches
+                  ? "Carregando..."
+                  : matchId
+                    ? "Conversa não encontrada."
+                    : "Selecione uma conversa para começar."}
               </p>
             )}
+            <div ref={fimDasMensagens} />
           </div>
 
-          {/* INPUT */}
           {matchSelecionado && (
-            <div className="flex gap-2">
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                enviarMensagem();
+              }}
+            >
               <Input
                 value={novaMensagem}
                 onChange={(e) => setNovaMensagem(e.target.value)}
                 placeholder="Digite sua mensagem"
+                maxLength={2000}
+                autoComplete="off"
               />
-              <Button onClick={enviarMensagem}>Enviar</Button>
-            </div>
+              <Button type="submit" disabled={enviando || !novaMensagem.trim()}>
+                {enviando ? "..." : "Enviar"}
+              </Button>
+            </form>
           )}
         </CardContent>
       </Card>

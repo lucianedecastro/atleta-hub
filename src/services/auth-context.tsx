@@ -3,10 +3,8 @@ import {
   useContext,
   useState,
   ReactNode,
-  useEffect,
-  useCallback, // Importar useCallback
+  useCallback,
 } from "react";
-import api from "./apiService"; // Importar do novo apiService
 
 // Define a interface para os dados do usuário.
 interface UserData {
@@ -16,85 +14,85 @@ interface UserData {
   userType: "atleta" | "marca" | "admin"; // Backend retorna em minúsculas
 }
 
-// Define a interface para o contexto de autenticação.
 interface AuthContextType {
   userData: UserData | null;
   login: (token: string, user: UserData) => void;
   logout: () => void;
-  isAuthenticated: boolean; // Adicionar uma propriedade para verificar o estado de autenticação
+  isAuthenticated: boolean;
 }
 
-// Cria o contexto de autenticação.
-// Define um nome para o contexto para facilitar a depuração no React DevTools.
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Cria o provedor de autenticação que irá gerenciar o estado.
+function limparSessao() {
+  try {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  } catch {
+    /* storage indisponível */
+  }
+}
+
+// Lê o "exp" do JWT (sem validar assinatura: isso é só para não mostrar uma sessão já vencida).
+function tokenExpirado(token: string): boolean {
+  try {
+    const payload = token.split(".")[1];
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")));
+    if (typeof json.exp !== "number") return false;
+    return json.exp * 1000 <= Date.now();
+  } catch {
+    return true; // token ilegível = inválido
+  }
+}
+
+// Lê a sessão salva ANTES da primeira renderização.
+// Antes isso era feito num useEffect: na primeira renderização userData era null e as telas
+// protegidas (Dashboard, Perfil) redirecionavam para "/" mesmo com o usuário logado (ao dar F5).
+function lerSessaoSalva(): UserData | null {
+  try {
+    const token = localStorage.getItem("token");
+    const salvo = localStorage.getItem("user");
+    if (!token || !salvo) return null;
+
+    if (tokenExpirado(token)) {
+      limparSessao();
+      return null;
+    }
+    return JSON.parse(salvo) as UserData;
+  } catch {
+    limparSessao();
+    return null;
+  }
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(lerSessaoSalva);
 
-  // Memoiza a função de logout para garantir estabilidade referencial.
-  // Isso é importante se 'logout' fosse uma dependência de outros hooks ou componentes memoizados.
   const logout = useCallback(() => {
-    // Verificar se window está definido para compatibilidade com SSR
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-    }
+    limparSessao();
     setUserData(null);
-    // Remover o cabeçalho de autorização. Garantir que a propriedade existe antes de deletar.
-    if (api.defaults.headers.common.Authorization) {
-      delete api.defaults.headers.common.Authorization;
+  }, []);
+
+  const login = useCallback((token: string, user: UserData) => {
+    try {
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+    } catch {
+      /* storage indisponível: a sessão vale só até recarregar */
     }
-  }, []); // Sem dependências, pois não usa estados/props que mudam.
+    setUserData(user);
+  }, []);
 
-  // Memoiza a função de login para garantir estabilidade referencial.
-  const login = useCallback(
-    (token: string, user: UserData) => {
-      // Verificar se window está definido para compatibilidade com SSR
-      if (typeof window !== "undefined") {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-      }
-      setUserData(user);
-      // Configurar o cabeçalho de autorização para futuras requisições.
-      // Em apps maiores, um interceptor Axios seria uma alternativa mais robusta.
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    },
-    [] // Sem dependências, pois não usa estados/props que mudam.
-  );
-
-  useEffect(() => {
-    // Garante que o código só é executado no ambiente do navegador.
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
-
-      if (token && storedUser) {
-        try {
-          const user: UserData = JSON.parse(storedUser);
-          setUserData(user);
-          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-          // Considere adicionar aqui uma validação de token (ex: chamar /me da API)
-          // para garantir que o token ainda é válido antes de estabelecer a sessão.
-        } catch (error) {
-          console.error("Falha ao analisar dados do usuário do localStorage:", error);
-          // Limpa o localStorage e o estado se os dados estiverem corrompidos.
-          logout();
-        }
-      }
-    }
-  }, [logout]); // Adiciona logout como dependência para satisfazer as regras do hook (embora seja estável).
-
-  const isAuthenticated = !!userData; // Deriva o estado de autenticação.
-
+  // O token é anexado a cada requisição pelo interceptor do apiService.
   return (
-    <AuthContext.Provider value={{ userData, login, logout, isAuthenticated }}>
+    <AuthContext.Provider
+      value={{ userData, login, logout, isAuthenticated: !!userData }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Hook customizado para usar o contexto de autenticação em qualquer componente.
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

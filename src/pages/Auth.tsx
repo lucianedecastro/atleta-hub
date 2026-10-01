@@ -21,18 +21,18 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/services/auth-context";
-import { auth, LoginRequest } from "@/services/apiService";
-import { AxiosError } from "axios";
+import { auth, LoginRequest, wakeUpApi } from "@/services/apiService";
+import { getErrorMessage } from "@/lib/errors";
 
 enum AuthMode {
   Login = "login",
   Register = "register",
 }
 
+// ADMIN não existe mais no cadastro público (contas de administrador são criadas direto no banco).
 enum UserType {
   Atleta = "ATLETA",
   Marca = "MARCA",
-  Admin = "ADMIN",
 }
 
 interface AuthFormData {
@@ -45,9 +45,7 @@ interface AuthFormData {
   idioma: string;
 }
 
-interface ErrorResponse {
-  message?: string;
-}
+const SENHA_MINIMA = 8;
 
 const initialFormData: AuthFormData = {
   nome: "",
@@ -73,19 +71,11 @@ export default function Auth() {
 
   const { login } = useAuth();
 
-  /* =====================================================
-     🩺 HEALTH CHECK (ACORDA O BACKEND NO RENDER)
-     ===================================================== */
+  // Acorda o backend no Render assim que a tela abre (cold start).
+  // Antes usava VITE_API_BASE_URL (variável que não existe) e chamava "undefined/health".
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/health`)
-      .then(() => {
-        console.info("🩺 Backend acordado (health check OK)");
-      })
-      .catch(() => {
-        console.warn("🩺 Falha no health check (backend ainda dormindo)");
-      });
+    wakeUpApi();
   }, []);
-  /* ===================================================== */
 
   useEffect(() => {
     const newMode =
@@ -117,24 +107,33 @@ export default function Auth() {
     setFormData((prev) => ({ ...prev, idioma: value }));
   }, []);
 
+  const erroDeValidacao = (mensagem: string) =>
+    toast({
+      title: "Confira os dados",
+      description: mensagem,
+      variant: "destructive",
+    });
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      if (isLoading) return;
+
+      const email = formData.email.trim();
 
       try {
         if (mode === AuthMode.Register) {
-          if (
-            !formData.nome ||
-            !formData.email ||
-            !formData.senha ||
-            !formData.cidade ||
-            !formData.estado
-          ) {
-            toast({
-              title: "Erro de validação",
-              description: "Preencha todos os campos obrigatórios.",
-              variant: "destructive",
-            });
+          const nome = formData.nome.trim();
+          const cidade = formData.cidade.trim();
+          const estado = formData.estado.trim();
+
+          if (!nome || !email || !formData.senha || !cidade || !estado) {
+            erroDeValidacao("Preencha todos os campos obrigatórios.");
+            return;
+          }
+
+          if (formData.senha.length < SENHA_MINIMA) {
+            erroDeValidacao(`A senha precisa ter pelo menos ${SENHA_MINIMA} caracteres.`);
             return;
           }
 
@@ -142,7 +141,7 @@ export default function Auth() {
             toast({
               title: "Consentimento obrigatório",
               description:
-                "Você precisa concordar com o uso dos seus dados para continuar.",
+                "Você precisa concordar com os Termos e a Política de Privacidade para continuar.",
               variant: "destructive",
             });
             return;
@@ -151,12 +150,12 @@ export default function Auth() {
           setIsLoading(true);
 
           await auth.register({
-            nome: formData.nome,
-            email: formData.email,
+            nome,
+            email,
             senha: formData.senha,
             tipoUsuario: formData.tipoUsuario,
-            cidade: formData.cidade,
-            estado: formData.estado,
+            cidade,
+            estado,
             idioma: formData.idioma,
           });
 
@@ -167,19 +166,15 @@ export default function Auth() {
 
           navigate(`/auth?mode=${AuthMode.Login}`);
         } else {
-          if (!formData.email || !formData.senha) {
-            toast({
-              title: "Erro de validação",
-              description: "Informe email e senha.",
-              variant: "destructive",
-            });
+          if (!email || !formData.senha) {
+            erroDeValidacao("Informe email e senha.");
             return;
           }
 
           setIsLoading(true);
 
           const payload: LoginRequest = {
-            email: formData.email,
+            email,
             senha: formData.senha,
           };
 
@@ -193,25 +188,21 @@ export default function Auth() {
           navigate("/dashboard");
         }
       } catch (err) {
-        const message =
-          (err as AxiosError<ErrorResponse>).response?.data?.message ||
-          "Erro ao processar a solicitação.";
-
         toast({
-          title: "Erro",
-          description: message,
+          title: "Não foi possível continuar",
+          description: getErrorMessage(err, "Erro ao processar a solicitação."),
           variant: "destructive",
         });
       } finally {
         setIsLoading(false);
       }
     },
-    [mode, formData, acceptedTerms, login, navigate]
+    [mode, formData, acceptedTerms, login, navigate, isLoading]
   );
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100 dark:bg-gray-900">
-      <Card className="w-[400px]">
+    <div className="flex justify-center items-center min-h-screen p-4 bg-gray-100 dark:bg-gray-900">
+      <Card className="w-full max-w-[400px]">
         <form onSubmit={handleSubmit}>
           <CardHeader>
             <CardTitle>
@@ -230,29 +221,42 @@ export default function Auth() {
                 <>
                   <div>
                     <Label htmlFor="nome">Nome</Label>
-                    <Input id="nome" name="nome" value={formData.nome} onChange={handleInputChange} />
+                    <Input id="nome" name="nome" autoComplete="name" maxLength={100} value={formData.nome} onChange={handleInputChange} />
                   </div>
 
                   <div>
                     <Label htmlFor="cidade">Cidade</Label>
-                    <Input id="cidade" name="cidade" value={formData.cidade} onChange={handleInputChange} />
+                    <Input id="cidade" name="cidade" autoComplete="address-level2" maxLength={100} value={formData.cidade} onChange={handleInputChange} />
                   </div>
 
                   <div>
                     <Label htmlFor="estado">Estado</Label>
-                    <Input id="estado" name="estado" value={formData.estado} onChange={handleInputChange} />
+                    <Input id="estado" name="estado" autoComplete="address-level1" maxLength={100} value={formData.estado} onChange={handleInputChange} />
                   </div>
                 </>
               )}
 
               <div>
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
+                <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" maxLength={100} value={formData.email} onChange={handleInputChange} />
               </div>
 
               <div>
                 <Label htmlFor="senha">Senha</Label>
-                <Input id="senha" name="senha" type="password" value={formData.senha} onChange={handleInputChange} />
+                <Input
+                  id="senha"
+                  name="senha"
+                  type="password"
+                  autoComplete={mode === AuthMode.Login ? "current-password" : "new-password"}
+                  maxLength={72}
+                  value={formData.senha}
+                  onChange={handleInputChange}
+                />
+                {mode === AuthMode.Register && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Mínimo de {SENHA_MINIMA} caracteres.
+                  </p>
+                )}
               </div>
 
               {mode === AuthMode.Register && (
@@ -264,7 +268,6 @@ export default function Auth() {
                       <SelectContent>
                         <SelectItem value={UserType.Atleta}>Atleta</SelectItem>
                         <SelectItem value={UserType.Marca}>Marca</SelectItem>
-                        <SelectItem value={UserType.Admin}>Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
