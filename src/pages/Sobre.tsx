@@ -47,7 +47,7 @@ const Sobre = () => {
         • <strong>ODS 9 (Indústria, Inovação e Infraestrutura)</strong>: A
         plataforma oferece uma infraestrutura digital inovadora e escalável,
         conectando atletas e marcas por meio de soluções modernas de software,
-        como chat em tempo real e serviços de tradução automática.
+        como chat integrado e serviços de tradução automática.
         <br />
         <br />
         • <strong>ODS 8 (Trabalho Decente e Crescimento Econômico)</strong>: Ao
@@ -59,7 +59,7 @@ const Sobre = () => {
         • <strong>ODS 10 (Redução das Desigualdades)</strong>: A plataforma atua
         diretamente na redução de barreiras econômicas, geográficas e
         linguísticas. O recurso de{" "}
-        <strong>tradução simultânea bidirecional</strong>, atualmente em
+        <strong>tradução automática de mensagens</strong>, atualmente em
         funcionamento no chat, permite que atletas se comuniquem em português,
         enquanto marcas estrangeiras utilizam seus próprios idiomas, promovendo
         inclusão e equidade no acesso a oportunidades globais.
@@ -131,12 +131,12 @@ const Sobre = () => {
 
         <div className="bg-white dark:bg-secondary p-6 rounded-2xl shadow-md">
           <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-            <Languages className="w-5 h-5" /> Tradução Simultânea
+            <Languages className="w-5 h-5" /> Tradução Automática
           </h3>
           <p className="text-muted-foreground">
-            Tradução automática bidirecional em tempo real no chat, permitindo
-            comunicação fluida entre atletas brasileiros e marcas
-            internacionais, sem barreiras linguísticas.
+            Tradução automática das mensagens no chat, permitindo comunicação
+            fluida entre atletas brasileiros e marcas internacionais, com menos
+            barreiras linguísticas.
           </p>
         </div>
       </div>

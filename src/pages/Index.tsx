@@ -10,8 +10,7 @@ import {
   Heart,
   Users,
   MessageCircle,
-  TrendingUp,
-  Star
+  TrendingUp
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 
@@ -41,21 +40,6 @@ const featuresData = [
     icon: <TrendingUp className="w-8 h-8 text-primary-glow" aria-hidden="true" />,
     title: "Crescimento",
     description: "Potencialize sua carreira ou encontre talentos"
-  }
-];
-
-const testimonialsData = [
-  {
-    id: "joao-silva",
-    name: "João Silva",
-    role: "Atleta de Futebol",
-    text: "Consegui patrocínio através do AtletaHub! O sistema de match é incrível."
-  },
-  {
-    id: "marca-patrocinadora",
-    name: "Marca Patrocinadora",
-    role: "Marca Esportiva",
-    text: "Encontramos atletas perfeitos para nossa campanha. Recomendo!"
   }
 ];
 
@@ -151,7 +135,7 @@ const Index = () => {
           <div className="text-center mb-16">
             <h2 id="process-heading" className="text-4xl font-bold mb-4">Processo simples</h2>
             <p className="text-xl text-muted-foreground">
-              Em 3 passos você pode começar a fazer connections
+              Em 3 passos você pode começar a fazer conexões
             </p>
           </div>
 
@@ -179,42 +163,12 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-20 bg-secondary/50" aria-labelledby="testimonials-heading">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 id="testimonials-heading" className="text-4xl font-bold mb-4">O que dizem nossos usuários</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {testimonialsData.map((testimonial) => (
-              <Card key={testimonial.id} className="hover:shadow-elegant transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center space-x-2" aria-label="Avaliação de 5 estrelas">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-primary fill-current" aria-hidden="true" />
-                    ))}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4 italic">"{testimonial.text}"</p>
-                  <div>
-                    <p className="font-semibold">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-20 bg-gradient-primary text-white" aria-labelledby="cta-heading">
         <div className="container mx-auto text-center px-4">
           <h2 id="cta-heading" className="text-4xl font-bold mb-4">Pronto para começar?</h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Junte-se a milhares de atletas e marcas que já estão conectados no AtletaHub
+            Crie seu perfil e comece a se conectar com atletas e marcas no AtletaHub
           </p>
           <Link to="/auth?mode=register">
             <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
