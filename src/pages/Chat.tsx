@@ -41,6 +41,9 @@ export default function Chat() {
   const [novaMensagem, setNovaMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [traduzindo, setTraduzindo] = useState<number | null>(null);
+  // Texto lido pelo leitor de tela quando chega mensagem nova (fica invisível na tela).
+  const [anuncio, setAnuncio] = useState("");
+  const ultimaMensagemVista = useRef<number | null>(null);
 
   const fimDasMensagens = useRef<HTMLDivElement | null>(null);
 
@@ -120,6 +123,23 @@ export default function Chat() {
     fimDasMensagens.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens.length]);
 
+  // Ao trocar de conversa, recomeça o controle (a primeira carga não é "mensagem nova").
+  useEffect(() => {
+    ultimaMensagemVista.current = null;
+    setAnuncio("");
+  }, [matchSelecionado?.id]);
+
+  // Avisa o leitor de tela só de mensagens novas do outro participante.
+  useEffect(() => {
+    if (!matchSelecionado || mensagens.length === 0) return;
+    const ultima = mensagens[mensagens.length - 1];
+    const anterior = ultimaMensagemVista.current;
+    ultimaMensagemVista.current = ultima.id;
+    if (anterior !== null && anterior !== ultima.id && ultima.idRemetente !== userData?.id) {
+      setAnuncio(`Nova mensagem de ${matchSelecionado.nomeOutroUsuario}: ${ultima.traducao ?? ultima.texto}`);
+    }
+  }, [mensagens, matchSelecionado, userData?.id]);
+
   // =========================
   // 🔹 Enviar mensagem
   // =========================
@@ -198,7 +218,7 @@ export default function Chat() {
           No celular, a lista some quando uma conversa está aberta (e vice-versa). */}
       <Card className={`${matchId ? "hidden md:flex" : "flex"} w-full md:w-64 md:shrink-0 flex-col`}>
         <CardHeader className="space-y-3">
-          <CardTitle>Conversas</CardTitle>
+          <CardTitle role="heading" aria-level={2}>Conversas</CardTitle>
 
           <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
             ← Voltar para o Dashboard
@@ -214,9 +234,10 @@ export default function Chat() {
                 key={match.id}
                 variant={matchSelecionado?.id === match.id ? "default" : "outline"}
                 className="justify-start gap-2"
+                aria-current={matchSelecionado?.id === match.id ? "true" : undefined}
                 onClick={() => navigate(`/chat/${match.id}`)}
               >
-                <UserAvatar nome={match.nomeOutroUsuario} url={match.fotoOutroUsuario} size="sm" />
+                <UserAvatar nome={match.nomeOutroUsuario} url={match.fotoOutroUsuario} size="sm" decorativo />
                 {match.nomeOutroUsuario}
               </Button>
             ))
@@ -234,12 +255,13 @@ export default function Chat() {
               ← Conversas
             </Button>
           </div>
-          <CardTitle className="flex items-center gap-3">
+          <CardTitle role="heading" aria-level={1} className="flex items-center gap-3">
             {matchSelecionado && (
               <UserAvatar
                 nome={matchSelecionado.nomeOutroUsuario}
                 url={matchSelecionado.fotoOutroUsuario}
                 size="sm"
+                decorativo
               />
             )}
             {matchSelecionado
@@ -249,7 +271,13 @@ export default function Chat() {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col justify-between min-h-0">
-          <div className="flex-1 space-y-4 overflow-y-auto mb-4 pr-2">
+          <div className="sr-only" role="status" aria-live="polite">{anuncio}</div>
+          <div
+            role="log"
+            aria-live="off"
+            aria-label="Mensagens da conversa"
+            className="flex-1 space-y-4 overflow-y-auto mb-4 pr-2"
+          >
             {matchSelecionado ? (
               mensagens.length > 0 ? (
                 mensagens.map((msg) => {
@@ -315,6 +343,7 @@ export default function Chat() {
                 value={novaMensagem}
                 onChange={(e) => setNovaMensagem(e.target.value)}
                 placeholder="Digite sua mensagem"
+                aria-label="Mensagem"
                 maxLength={2000}
                 autoComplete="off"
               />

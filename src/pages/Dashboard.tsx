@@ -160,7 +160,7 @@ export default function Dashboard() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h2>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h1>
 
         <div className="flex items-center space-x-2">
           <Link to={`/profile/${userData?.id}`}>
@@ -187,7 +187,7 @@ export default function Dashboard() {
                       to={`/chat/${match.id}`}
                       className="flex items-center gap-3 text-primary hover:underline"
                     >
-                      <UserAvatar nome={match.nomeOutroUsuario} url={match.fotoOutroUsuario} size="sm" />
+                      <UserAvatar nome={match.nomeOutroUsuario} url={match.fotoOutroUsuario} size="sm" decorativo />
                       {match.nomeOutroUsuario}
                     </Link>
                   </li>
@@ -211,6 +211,7 @@ export default function Dashboard() {
                     url={profile.fotoUrl}
                     tipo={profile.tipoUsuario}
                     size="lg"
+                    decorativo
                   />
                   <div className="min-w-0">
                     <CardTitle className="truncate">{profile.nome}</CardTitle>
@@ -249,12 +250,13 @@ export default function Dashboard() {
               <CardFooter className="flex gap-2">
                 <Button
                   disabled={enviando === profile.id}
+                  aria-label={`Curtir ${profile.nome}`}
                   onClick={() => handleDemonstrarInteresse(profile.id)}
                 >
                   {enviando === profile.id ? "Enviando..." : "Curtir"}
                 </Button>
                 <Link to={`/profile/${profile.id}`}>
-                  <Button variant="outline">Ver Perfil</Button>
+                  <Button variant="outline" aria-label={`Ver perfil de ${profile.nome}`}>Ver Perfil</Button>
                 </Link>
               </CardFooter>
             </Card>

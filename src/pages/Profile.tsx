@@ -323,7 +323,7 @@ const VitrineSection = ({
   return (
     <div className="mt-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">{isMyProfile ? "Minha Vitrine" : "Vitrine"}</h3>
+        <h2 className="text-xl font-bold">{isMyProfile ? "Minha Vitrine" : "Vitrine"}</h2>
       </div>
 
       {isMyProfile && (
@@ -344,7 +344,7 @@ const VitrineSection = ({
       )}
 
       <div>
-        <h4 className="font-semibold mb-2">Fotos</h4>
+        <h3 className="font-semibold mb-2">Fotos</h3>
         {vitrineData?.fotos && vitrineData.fotos.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {vitrineData.fotos.map((url, index) => (
@@ -359,7 +359,7 @@ const VitrineSection = ({
       </div>
 
       <div>
-        <h4 className="font-semibold mb-2">Vídeos</h4>
+        <h3 className="font-semibold mb-2">Vídeos</h3>
         {vitrineData?.videos && vitrineData.videos.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {vitrineData.videos.map((url, index) => (
@@ -598,7 +598,7 @@ export default function Profile() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={() => navigate("/dashboard")}>← Voltar</Button>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Perfil de {perfil.nome}</h2>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Perfil de {perfil.nome}</h1>
         </div>
         {isMyProfile && (
           <div className="flex items-center space-x-2">

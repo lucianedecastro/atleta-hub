@@ -130,3 +130,91 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* ===================== ACESSIBILIDADE ===================== */
+
+/* Link "Pular para o conteúdo": invisível até receber o foco do teclado */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  border-radius: 0 0 0.5rem 0;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
+.skip-link:focus {
+  left: 0;
+}
+
+/* Foco visível em links e demais elementos (botões do shadcn já têm o próprio anel) */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Quem pediu menos movimento no sistema (celular/computador) é respeitado automaticamente */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Opções da barra de acessibilidade */
+html.a11y-sem-animacao *,
+html.a11y-sem-animacao *::before,
+html.a11y-sem-animacao *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+html.a11y-sublinhar a {
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+
+/* Alto contraste: fundo preto, texto branco, destaque amarelo (todas as combinações passam de 7:1) */
+html.a11y-contraste {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 0%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 50 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --primary-glow: 50 100% 60%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 85%;
+  --accent: 190 100% 50%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 100% 70%;
+  --destructive-foreground: 0 0% 0%;
+  --border: 0 0% 100%;
+  --input: 0 0% 100%;
+  --ring: 50 100% 50%;
+  --match: 330 100% 70%;
+  --match-foreground: 0 0% 0%;
+  --info: 200 100% 70%;
+  --info-foreground: 0 0% 0%;
+  --interested: 120 80% 60%;
+  --interested-foreground: 0 0% 0%;
+  --gradient-primary: linear-gradient(0deg, #000, #000);
+  --gradient-hero: linear-gradient(0deg, #000, #000);
+  --shadow-elegant: none;
+  --shadow-glow: none;
+}
+html.a11y-contraste a {
+  text-decoration: underline;
+}

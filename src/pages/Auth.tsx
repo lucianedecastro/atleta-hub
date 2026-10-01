@@ -205,7 +205,7 @@ export default function Auth() {
       <Card className="w-full max-w-[400px]">
         <form onSubmit={handleSubmit}>
           <CardHeader>
-            <CardTitle>
+            <CardTitle role="heading" aria-level={1}>
               {mode === AuthMode.Login ? "Login" : "Cadastro"}
             </CardTitle>
             <CardDescription>
@@ -262,9 +262,9 @@ export default function Auth() {
               {mode === AuthMode.Register && (
                 <>
                   <div>
-                    <Label>Tipo de usuário</Label>
+                    <Label htmlFor="tipoUsuario">Tipo de usuário</Label>
                     <Select value={formData.tipoUsuario} onValueChange={handleSelectChange}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="tipoUsuario"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value={UserType.Atleta}>Atleta</SelectItem>
                         <SelectItem value={UserType.Marca}>Marca</SelectItem>
@@ -273,9 +273,9 @@ export default function Auth() {
                   </div>
 
                   <div>
-                    <Label>Idioma de preferência</Label>
+                    <Label htmlFor="idioma">Idioma de preferência</Label>
                     <Select value={formData.idioma} onValueChange={handleIdiomaChange}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger id="idioma"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pt">🇧🇷 Português</SelectItem>
                         <SelectItem value="en">🇺🇸 English</SelectItem>
