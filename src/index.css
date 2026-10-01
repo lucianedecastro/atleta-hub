@@ -1,3 +1,6 @@
+/* Fonte do AtletaHub (Bricolage Grotesque), empacotada no próprio app: não depende do Google e funciona offline */
+@import "@fontsource-variable/bricolage-grotesque";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,56 +16,66 @@ body,
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
+
+Identidade "Quadra + Vitrine":
+  azul quadra  #1646B5  -> --primary
+  tinta        #0A1633  -> --foreground
+  piso         #E9F0FF  -> --background
+  laranja bola #FF7A1A  -> --cta (botões de ação)
+  Todos os pares de texto abaixo passam de 4,5:1 (WCAG AA).
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 221 100% 96%;
+    --foreground: 222 67% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 67% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 67% 12%;
 
-    --primary: 16 100% 66%; /* Um laranja/vermelho mais vibrante */
+    --primary: 222 78% 40%; /* azul quadra: texto branco = 8,1:1 */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 16 100% 76%;
+    --primary-glow: 222 85% 50%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 221 70% 92%;
+    --secondary-foreground: 222 67% 12%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 221 70% 92%;
+    --muted-foreground: 222 27% 34%; /* cinza azulado: 6:1 sobre o piso */
 
-    --accent: 268 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 221 100% 90%; /* fundo suave de hover */
+    --accent-foreground: 222 67% 12%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 40%; /* vermelho escuro: texto branco = 6,9:1 */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 16 100% 66%;
+    --border: 222 40% 80%;
+    --input: 222 78% 40%;
+    --ring: 222 78% 40%;
 
-    --match: 348 83% 47%;
-    --match-foreground: 0 0% 100%;
+    /* Laranja de ação: texto em tinta = 6,9:1 (o branco dava só 2,5:1) */
+    --cta: 25 100% 55%;
+    --cta-foreground: 222 67% 12%;
 
-    /* ✅ NOVAS CORES ADICIONADAS */
-    --info: 215 90.0% 43.5%;
-    --info-foreground: 210 40% 98%;
+    --match: 25 100% 55%;
+    --match-foreground: 222 67% 12%;
 
-    --interested: 142.1 76.2% 36.3%;
-    --interested-foreground: 210 40% 98%;
+    --info: 222 67% 20%;
+    --info-foreground: 0 0% 100%;
+
+    --interested: 222 78% 40%;
+    --interested-foreground: 0 0% 100%;
 
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
-    --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.3);
-    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.4);
+    --gradient-hero: linear-gradient(160deg, hsl(222 78% 40%) 0%, hsl(222 67% 14%) 100%);
+    --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.35);
+    --shadow-glow: 0 0 30px hsl(var(--cta) / 0.4);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -112,12 +125,14 @@ All colors MUST be HSL.
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* ✅ DARK MODE - cores adicionais */
     --info: 215 90.0% 43.5%;
     --info-foreground: 210 40% 98%;
 
     --interested: 142.1 76.2% 36.3%;
     --interested-foreground: 210 40% 98%;
+
+    --cta: 25 100% 55%;
+    --cta-foreground: 222 67% 12%;
   }
 }
 
@@ -127,7 +142,7 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
@@ -149,10 +164,15 @@ All colors MUST be HSL.
   left: 0;
 }
 
-/* Foco visível em links e demais elementos (botões do shadcn já têm o próprio anel) */
+/* Foco visível em links e demais elementos (azul quadra: 8:1 sobre o fundo claro) */
 :focus-visible {
-  outline: 2px solid hsl(var(--ring));
+  outline: 3px solid hsl(var(--ring));
   outline-offset: 2px;
+}
+
+/* Sobre fundos azuis (cabeçalho, hero) o anel de foco fica branco para continuar visível */
+.on-dark :focus-visible {
+  outline-color: #fff;
 }
 
 /* Quem pediu menos movimento no sistema (celular/computador) é respeitado automaticamente */
@@ -204,6 +224,8 @@ html.a11y-contraste {
   --border: 0 0% 100%;
   --input: 0 0% 100%;
   --ring: 50 100% 50%;
+  --cta: 50 100% 50%;
+  --cta-foreground: 0 0% 0%;
   --match: 330 100% 70%;
   --match-foreground: 0 0% 0%;
   --info: 200 100% 70%;
@@ -217,4 +239,7 @@ html.a11y-contraste {
 }
 html.a11y-contraste a {
   text-decoration: underline;
+}
+html.a11y-contraste .on-dark :focus-visible {
+  outline-color: hsl(var(--ring));
 }

@@ -12,12 +12,26 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: {
+        DEFAULT: "1rem",
+        sm: "1.5rem",
+        lg: "2rem",
+      },
       screens: {
         "2xl": "1400px",
       },
     },
     extend: {
+      fontFamily: {
+        sans: [
+          '"Bricolage Grotesque Variable"',
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "sans-serif",
+        ],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -53,7 +67,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // ✅ Já existente: match
+        // Laranja de ação (botão Curtir, Começar agora...)
+        cta: {
+          DEFAULT: "hsl(var(--cta))",
+          foreground: "hsl(var(--cta-foreground))",
+        },
         match: {
           DEFAULT: "hsl(var(--match))",
           foreground: "hsl(var(--match-foreground))",
@@ -68,21 +86,18 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // ✅ NOVAS CORES ADICIONADAS
-        info: { // Para a badge "Recebeu Interesse!"
+        info: {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
         },
-        interested: { // Para o botão/badge "Interessado"
+        interested: {
           DEFAULT: "hsl(var(--interested))",
           foreground: "hsl(var(--interested-foreground))",
         },
       },
       backgroundImage: {
-        "gradient-primary": "var(--gradient-primary)", // Já existente
-        "gradient-hero": "var(--gradient-hero)", // Já existente
-        // ✅ Adicionar o gradient para o header aqui se for uma nova variável CSS
-        // 'gradient-header': 'linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%)',
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-hero": "var(--gradient-hero)",
       },
       boxShadow: {
         elegant: "var(--shadow-elegant)",
