@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Camera, Flag, Pencil, Video } from "lucide-react";
 import { useAuth } from "@/services/auth-context";
 import {
@@ -505,7 +505,10 @@ const VitrineSection = ({
 export default function Profile() {
   const { userData } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
+  // Quem chega do chat volta para a conversa; os demais voltam para o Descobrir.
+  const voltarPara = (location.state as { voltarPara?: string } | null)?.voltarPara ?? "/dashboard";
 
   const [perfil, setPerfil] = useState<PerfilForm | null>(null);
   const [vitrineData, setVitrineData] = useState<VitrineResponse | null>(null);
@@ -741,7 +744,7 @@ export default function Profile() {
       <div className="mx-auto max-w-md space-y-4 py-10 text-center">
         <h1 className="text-2xl font-extrabold">Não foi possível carregar</h1>
         <p className="font-medium text-destructive">{error}</p>
-        <Button variant="outline" onClick={() => navigate("/dashboard")}>
+        <Button variant="outline" onClick={() => navigate(voltarPara)}>
           <ArrowLeft aria-hidden="true" />
           Voltar
         </Button>
@@ -779,7 +782,7 @@ export default function Profile() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         {!isMyProfile ? (
-          <Button type="button" variant="outline" onClick={() => navigate("/dashboard")}>
+          <Button type="button" variant="outline" onClick={() => navigate(voltarPara)}>
             <ArrowLeft aria-hidden="true" />
             Voltar
           </Button>

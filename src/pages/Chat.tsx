@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Ban, Flag, Languages, Send } from "lucide-react";
+import { ArrowLeft, Ban, Flag, Languages, Send, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
@@ -15,6 +15,7 @@ import {
 import { getErrorMessage } from "@/lib/errors";
 import { UserAvatar } from "@/components/UserAvatar";
 import { DenunciarDialog } from "@/components/DenunciarDialog";
+import { BloquearButton } from "@/components/BloquearButton";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -371,6 +372,30 @@ export default function Chat() {
                 {matchSelecionado ? matchSelecionado.nomeOutroUsuario : "Conversa"}
               </h1>
             </header>
+
+            {matchSelecionado && idOutraPessoa !== null && (
+              <div className="flex flex-wrap items-center gap-2 border-b-2 border-primary px-3 py-2">
+                <Button asChild variant="outline">
+                  <Link to={`/profile/${idOutraPessoa}`} state={{ voltarPara: `/chat/${matchSelecionado.id}` }}>
+                    <User aria-hidden="true" />
+                    Ver perfil
+                  </Link>
+                </Button>
+                <BloquearButton
+                  idUsuario={idOutraPessoa}
+                  nome={matchSelecionado.nomeOutroUsuario}
+                  bloqueada={euBloqueei}
+                  aoMudar={(bloqueou) =>
+                    setBloqueadosPorMim((atual) => {
+                      const novo = new Set(atual);
+                      if (bloqueou) novo.add(idOutraPessoa);
+                      else novo.delete(idOutraPessoa);
+                      return novo;
+                    })
+                  }
+                />
+              </div>
+            )}
 
             <p className="flex items-center gap-2 border-b-2 border-primary bg-secondary px-4 py-2 text-sm font-semibold">
               <Languages className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
