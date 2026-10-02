@@ -287,6 +287,8 @@ const auth = {
 const conta = {
   informarNascimento: (dataNascimento: string) =>
     api.put<{ message: string }>('/conta/nascimento', { dataNascimento }),
+  // Exclusão da própria conta: pede o e-mail e a senha para confirmar.
+  excluir: (email: string, senha: string) => api.post<{ message: string }>('/conta/excluir', { email, senha }),
 };
 
 const users = {

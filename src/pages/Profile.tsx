@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PerfilFoto } from "@/components/PerfilFoto";
 import { DenunciarDialog } from "@/components/DenunciarDialog";
+import { ExcluirContaDialog } from "@/components/ExcluirContaDialog";
 import { reduzirImagem } from "@/lib/imagem";
 
 // Limites iguais aos do servidor
@@ -805,6 +806,22 @@ export default function Profile() {
           )}
 
           {isEditing && isMyProfile && <div className="flex justify-end">{botoesEdicao}</div>}
+
+          {isMyProfile && !isEditing && (
+            <section aria-labelledby="titulo-excluir-conta" className="rounded-2xl border-2 border-destructive p-4">
+              <h2 id="titulo-excluir-conta" className="text-lg font-extrabold">
+                Excluir conta
+              </h2>
+              <p className="mt-1 text-base">
+                Apaga seus dados e seus arquivos e encerra o seu acesso. Não tem volta.
+              </p>
+              <ExcluirContaDialog>
+                <Button type="button" variant="outline" className="mt-3 border-destructive text-destructive">
+                  Excluir minha conta
+                </Button>
+              </ExcluirContaDialog>
+            </section>
+          )}
         </div>
       </div>
     </div>
