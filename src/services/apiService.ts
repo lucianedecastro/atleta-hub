@@ -356,6 +356,31 @@ const messageTranslations = {
     api.post<MensagemTraducaoResponse>('/mensagens/traducoes', data),
 };
 
+// -------- Denúncias --------
+export type MotivoDenuncia =
+  | 'ASSEDIO'
+  | 'GOLPE_OU_FRAUDE'
+  | 'PERFIL_FALSO'
+  | 'CONTEUDO_IMPROPRIO'
+  | 'MENOR_DE_IDADE'
+  | 'SPAM'
+  | 'OUTRO';
+
+export type TipoAlvoDenuncia = 'PERFIL' | 'MIDIA' | 'MENSAGEM';
+
+export interface DenunciaRequest {
+  idDenunciado: number;
+  tipoAlvo: TipoAlvoDenuncia;
+  motivo: MotivoDenuncia;
+  descricao?: string;
+  // MENSAGEM: número da mensagem | MIDIA: endereço da foto ou do vídeo
+  referencia?: string;
+}
+
+const denuncias = {
+  criar: (data: DenunciaRequest) => api.post<{ message: string }>('/denuncias', data),
+};
+
 const modalidades = {
   getAll: () => api.get<string[]>('/modalidades'),
 };
@@ -370,5 +395,6 @@ export {
   matches,
   messages,
   messageTranslations,
+  denuncias,
   modalidades,
 };

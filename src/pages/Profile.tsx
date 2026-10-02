@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Camera, Pencil, Video } from "lucide-react";
+import { ArrowLeft, Camera, Flag, Pencil, Video } from "lucide-react";
 import { useAuth } from "@/services/auth-context";
 import {
   users,
@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PerfilFoto } from "@/components/PerfilFoto";
+import { DenunciarDialog } from "@/components/DenunciarDialog";
 import { reduzirImagem } from "@/lib/imagem";
 
 // Limites iguais aos do servidor
@@ -768,6 +769,14 @@ export default function Profile() {
           <span />
         )}
         {botoesEdicao}
+        {!isMyProfile && (
+          <DenunciarDialog idDenunciado={perfil.id} nomeDenunciado={perfil.nome} tipoAlvo="PERFIL">
+            <Button type="button" variant="outline">
+              <Flag aria-hidden="true" />
+              Denunciar
+            </Button>
+          </DenunciarDialog>
+        )}
       </div>
 
       <div className="grid items-start gap-6 md:grid-cols-[22rem_1fr]">

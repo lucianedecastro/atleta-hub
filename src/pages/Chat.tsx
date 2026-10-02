@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Languages, Send } from "lucide-react";
+import { ArrowLeft, Flag, Languages, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
@@ -13,6 +13,7 @@ import {
 } from "@/services/apiService";
 import { getErrorMessage } from "@/lib/errors";
 import { UserAvatar } from "@/components/UserAvatar";
+import { DenunciarDialog } from "@/components/DenunciarDialog";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -390,6 +391,25 @@ export default function Chat() {
                                     ? "Ver só o original"
                                     : "Traduzir"}
                               </Button>
+                            )}
+                            {!isMine && matchSelecionado && (
+                              <DenunciarDialog
+                                idDenunciado={msg.idRemetente}
+                                nomeDenunciado={matchSelecionado.nomeOutroUsuario}
+                                tipoAlvo="MENSAGEM"
+                                referencia={String(msg.id)}
+                              >
+                                <Button
+                                  type="button"
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto min-h-11 px-0 py-0"
+                                  aria-label={`Denunciar mensagem de ${matchSelecionado.nomeOutroUsuario}`}
+                                >
+                                  <Flag aria-hidden="true" />
+                                  Denunciar
+                                </Button>
+                              </DenunciarDialog>
                             )}
                             {hora && (
                               <time
