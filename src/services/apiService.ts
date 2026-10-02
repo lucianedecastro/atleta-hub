@@ -111,6 +111,8 @@ export interface RegisterRequest {
   // Dois aceites separados
   concordoTermos: boolean;
   concordoPrivacidade: boolean;
+  // Beta fechado: código de convite (só é exigido quando o servidor está configurado para isso)
+  codigoConvite?: string;
 }
 
 // -------- User (perfil público) --------
@@ -277,6 +279,8 @@ export interface MensagemTraducaoResponse {
 const auth = {
   login: (data: LoginRequest) => api.post<LoginResponse>('/auth/login', data),
   register: (data: RegisterRequest) => api.post<{ message: string }>('/auth/registrar', data),
+  // Pergunta se o cadastro exige código de convite (beta fechado).
+  convite: () => api.get<{ exigido: boolean }>('/auth/convite'),
   // Recuperação de senha: pede o link por e-mail e troca a senha com o código do link.
   esqueciSenha: (email: string) => api.post<{ message: string }>('/auth/esqueci-senha', { email }),
   redefinirSenha: (token: string, novaSenha: string) =>

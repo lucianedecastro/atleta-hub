@@ -48,6 +48,7 @@ interface AuthFormData {
   estado: string;
   idioma: string;
   dataNascimento: string;
+  codigoConvite: string;
 }
 
 const SENHA_MINIMA = 8;
@@ -61,6 +62,7 @@ const initialFormData: AuthFormData = {
   estado: "",
   idioma: "pt",
   dataNascimento: "",
+  codigoConvite: "",
 };
 
 const TIPOS: { valor: UserType; rotulo: string }[] = [
@@ -81,12 +83,21 @@ export default function Auth() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [erroNascimento, setErroNascimento] = useState("");
+  // Beta fechado: o campo aparece enquanto o servidor exigir código (se a consulta falhar, mostra).
+  const [conviteExigido, setConviteExigido] = useState(true);
 
   const { login } = useAuth();
 
   // Acorda o backend no Render assim que a tela abre (cold start).
   useEffect(() => {
     wakeUpApi();
+  }, []);
+
+  useEffect(() => {
+    auth
+      .convite()
+      .then((res) => setConviteExigido(res.data.exigido !== false))
+      .catch(() => setConviteExigido(true));
   }, []);
 
   useEffect(() => {
@@ -144,6 +155,12 @@ export default function Auth() {
             return;
           }
 
+          const codigoConvite = formData.codigoConvite.trim();
+          if (conviteExigido && !codigoConvite) {
+            erroDeValidacao("Informe o código de convite.");
+            return;
+          }
+
           if (!formData.dataNascimento) {
             setErroNascimento("Informe sua data de nascimento.");
             erroDeValidacao("Informe sua data de nascimento.");
@@ -191,6 +208,7 @@ export default function Auth() {
             dataNascimento: formData.dataNascimento,
             concordoTermos: acceptedTerms,
             concordoPrivacidade: acceptedPrivacy,
+            codigoConvite: codigoConvite || undefined,
           });
 
           toast({
@@ -232,7 +250,7 @@ export default function Auth() {
         setIsLoading(false);
       }
     },
-    [mode, formData, acceptedTerms, acceptedPrivacy, login, navigate, isLoading]
+    [mode, formData, acceptedTerms, acceptedPrivacy, conviteExigido, login, navigate, isLoading]
   );
 
   const ehLogin = mode === AuthMode.Login;
@@ -266,6 +284,25 @@ export default function Auth() {
               <div className="grid gap-4">
                 {!ehLogin && (
                   <>
+                    {conviteExigido && (
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="codigoConvite">Código de convite</Label>
+                        <Input
+                          id="codigoConvite"
+                          name="codigoConvite"
+                          autoComplete="off"
+                          autoCapitalize="characters"
+                          maxLength={64}
+                          value={formData.codigoConvite}
+                          onChange={handleInputChange}
+                          aria-describedby="dica-convite"
+                        />
+                        <p id="dica-convite" className="text-sm text-muted-foreground">
+                          O AtletaHub está em beta, só para convidados. Peça o seu pelo Instagram.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="grid gap-1.5">
                       <Label htmlFor="nome">Nome</Label>
                       <Input id="nome" name="nome" autoComplete="name" maxLength={100} value={formData.nome} onChange={handleInputChange} />
