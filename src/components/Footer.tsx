@@ -30,6 +30,12 @@ export function Footer() {
               Política de Privacidade
             </Link>
           </nav>
+          <p className="mt-1 text-sm text-white/90">
+            Contato:{" "}
+            <a href={`mailto:${developerEmail}`} className={linkLegal}>
+              {developerEmail}
+            </a>
+          </p>
         </div>
 
         {/* Informações do Desenvolvedor */}
