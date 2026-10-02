@@ -140,7 +140,7 @@ const Index = () => {
             </h2>
             <p className="mt-3 max-w-xl text-lg text-muted-foreground">
               Atletas e marcas de países diferentes conversam cada um no seu idioma. Em qualquer mensagem
-              recebida, toque em Traduzir e leia em português ou inglês.
+              recebida, toque em Traduzir e leia em português, inglês ou espanhol.
             </p>
           </div>
 
