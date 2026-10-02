@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
 import { Logo } from "@/components/Logo";
 import { LinhasQuadra } from "@/components/LinhasQuadra";
+import { CampoSenha } from "@/components/CampoSenha";
 import { useAuth } from "@/services/auth-context";
 import { auth, LoginRequest, wakeUpApi } from "@/services/apiService";
 import { getErrorMessage } from "@/lib/errors";
@@ -317,10 +318,9 @@ export default function Auth() {
 
                 <div className="grid gap-1.5">
                   <Label htmlFor="senha">Senha</Label>
-                  <Input
+                  <CampoSenha
                     id="senha"
                     name="senha"
-                    type="password"
                     autoComplete={ehLogin ? "current-password" : "new-password"}
                     maxLength={72}
                     value={formData.senha}
@@ -331,6 +331,11 @@ export default function Auth() {
                     <p id="dica-senha" className="text-sm text-muted-foreground">
                       Mínimo de {SENHA_MINIMA} caracteres.
                     </p>
+                  )}
+                  {ehLogin && (
+                    <Link to="/esqueci-senha" className="inline-flex min-h-11 items-center justify-self-start text-base font-bold text-primary underline">
+                      Esqueci minha senha
+                    </Link>
                   )}
                 </div>
 

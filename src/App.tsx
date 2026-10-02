@@ -3,6 +3,8 @@ import Dashboard from "./pages/Dashboard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ConfirmarNascimento from "./pages/ConfirmarNascimento";
+import EsqueciSenha from "./pages/EsqueciSenha";
+import RedefinirSenha from "./pages/RedefinirSenha";
 import Termos from "@/pages/Termos";
 import Privacidade from "@/pages/Privacidade";
 import Profile from "./pages/Profile";
@@ -50,6 +52,8 @@ function App() {
               <Route path="/sobre" element={<Sobre />} />
               <Route path="/arquitetura" element={<Arquitetura />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+              <Route path="/redefinir-senha" element={<RedefinirSenha />} />
               <Route path="/confirmar-nascimento" element={<ConfirmarNascimento />} />
               <Route path="/termos" element={<Termos />} />
               <Route path="/privacidade" element={<Privacidade />} />

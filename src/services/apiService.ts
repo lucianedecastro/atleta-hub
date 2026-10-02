@@ -277,6 +277,10 @@ export interface MensagemTraducaoResponse {
 const auth = {
   login: (data: LoginRequest) => api.post<LoginResponse>('/auth/login', data),
   register: (data: RegisterRequest) => api.post<{ message: string }>('/auth/registrar', data),
+  // Recuperação de senha: pede o link por e-mail e troca a senha com o código do link.
+  esqueciSenha: (email: string) => api.post<{ message: string }>('/auth/esqueci-senha', { email }),
+  redefinirSenha: (token: string, novaSenha: string) =>
+    api.post<{ message: string }>('/auth/redefinir-senha', { token, novaSenha }),
 };
 
 // Conta: contas antigas informam a data de nascimento (uma única vez)
