@@ -383,6 +383,21 @@ export interface DenunciaRequest {
   referencia?: string;
 }
 
+// Bloqueio entre usuários (atleta ↔ marca).
+export interface PessoaBloqueada {
+  idUsuario: number;
+  nome: string;
+  tipoUsuario: string;
+  fotoUrl: string | null;
+  bloqueadoEm: string;
+}
+
+const bloqueios = {
+  listar: () => api.get<PessoaBloqueada[]>('/bloqueios'),
+  bloquear: (idUsuario: number) => api.post<{ message: string }>(`/bloqueios/${idUsuario}`),
+  desbloquear: (idUsuario: number) => api.delete<{ message: string }>(`/bloqueios/${idUsuario}`),
+};
+
 const denuncias = {
   criar: (data: DenunciaRequest) => api.post<{ message: string }>('/denuncias', data),
 };
@@ -402,5 +417,6 @@ export {
   messages,
   messageTranslations,
   denuncias,
+  bloqueios,
   modalidades,
 };

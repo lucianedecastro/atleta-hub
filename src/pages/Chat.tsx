@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Flag, Languages, Send } from "lucide-react";
+import { ArrowLeft, Ban, Flag, Languages, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/services/auth-context";
 import {
+  bloqueios,
   matches,
   messages,
   messageTranslations,
@@ -53,6 +54,9 @@ export default function Chat() {
   const [novaMensagem, setNovaMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [traduzindo, setTraduzindo] = useState<number | null>(null);
+  // Pessoas que EU bloqueei (a conversa com elas fica parada até desbloquear).
+  const [bloqueadosPorMim, setBloqueadosPorMim] = useState<Set<number>>(new Set());
+  const [desbloqueando, setDesbloqueando] = useState(false);
   // Texto lido pelo leitor de tela quando chega mensagem nova (fica invisível na tela).
   const [anuncio, setAnuncio] = useState("");
   const ultimaMensagemVista = useRef<number | null>(null);
@@ -86,6 +90,15 @@ export default function Chat() {
       )
       .finally(() => setCarregandoMatches(false));
   }, [userData, navigate]);
+
+  // Quem eu bloqueei (para trocar a caixa de mensagem pelo aviso com o botão Desbloquear).
+  useEffect(() => {
+    if (!userData) return;
+    bloqueios
+      .listar()
+      .then((res) => setBloqueadosPorMim(new Set(res.data.map((p) => p.idUsuario))))
+      .catch(() => setBloqueadosPorMim(new Set()));
+  }, [userData]);
 
   // =========================
   // Mensagens (carga + atualização periódica)
@@ -180,6 +193,31 @@ export default function Chat() {
   };
 
   // =========================
+  // Desbloquear (conversa congelada)
+  // =========================
+  const desbloquearOutraPessoa = async (idOutro: number, nome: string) => {
+    if (desbloqueando) return;
+    setDesbloqueando(true);
+    try {
+      await bloqueios.desbloquear(idOutro);
+      setBloqueadosPorMim((atual) => {
+        const novo = new Set(atual);
+        novo.delete(idOutro);
+        return novo;
+      });
+      toast({ title: "Pessoa desbloqueada", description: `${nome} volta a aparecer e a conversa pode continuar.` });
+    } catch (err) {
+      toast({
+        title: "Não foi possível desbloquear",
+        description: getErrorMessage(err, "Tente novamente em instantes."),
+        variant: "destructive",
+      });
+    } finally {
+      setDesbloqueando(false);
+    }
+  };
+
+  // =========================
   // Traduzir mensagem
   // =========================
   const traduzirMensagem = async (mensagem: Message) => {
@@ -220,6 +258,12 @@ export default function Chat() {
   };
 
   const idDoUsuario = userData?.id;
+  const idOutraPessoa = matchSelecionado
+    ? matchSelecionado.idUsuarioA === idDoUsuario
+      ? matchSelecionado.idUsuarioB
+      : matchSelecionado.idUsuarioA
+    : null;
+  const euBloqueei = idOutraPessoa !== null && bloqueadosPorMim.has(idOutraPessoa);
   const meuIdioma = userData?.idioma;
   const nomeMeuIdioma = meuIdioma ? NOMES_IDIOMA[meuIdioma.slice(0, 2).toLowerCase()] : undefined;
 
@@ -435,7 +479,24 @@ export default function Chat() {
               <div ref={fimDasMensagens} />
             </div>
 
-            {matchSelecionado && (
+            {matchSelecionado && euBloqueei && idOutraPessoa !== null && (
+              <div className="flex flex-wrap items-center gap-3 border-t-2 border-primary bg-secondary p-3">
+                <p className="flex min-w-0 flex-1 items-center gap-2 font-semibold">
+                  <Ban className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                  Você bloqueou {matchSelecionado.nomeOutroUsuario}. Para voltar a conversar, desbloqueie.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={desbloqueando}
+                  onClick={() => desbloquearOutraPessoa(idOutraPessoa, matchSelecionado.nomeOutroUsuario)}
+                >
+                  {desbloqueando ? "Desbloqueando..." : "Desbloquear"}
+                </Button>
+              </div>
+            )}
+
+            {matchSelecionado && !euBloqueei && (
               <form
                 className="flex items-center gap-2 border-t-2 border-primary p-3"
                 onSubmit={(e) => {

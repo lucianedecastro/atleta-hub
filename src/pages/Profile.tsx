@@ -7,6 +7,7 @@ import {
   profile as profileApi,
   vitrine as vitrineApi,
   modalidades,
+  bloqueios,
   UpdateAtletaProfileRequest,
   UpdateMarcaProfileRequest,
   VitrineResponse,
@@ -22,6 +23,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PerfilFoto } from "@/components/PerfilFoto";
 import { DenunciarDialog } from "@/components/DenunciarDialog";
 import { ExcluirContaDialog } from "@/components/ExcluirContaDialog";
+import { BloquearButton } from "@/components/BloquearButton";
+import { PessoasBloqueadas } from "@/components/PessoasBloqueadas";
 import { reduzirImagem } from "@/lib/imagem";
 
 // Limites iguais aos do servidor
@@ -515,6 +518,20 @@ export default function Profile() {
 
   const isMyProfile = useMemo(() => userData?.id.toString() === id, [userData, id]);
 
+  // Em perfil de outra pessoa: eu bloqueei essa pessoa?
+  const [bloqueada, setBloqueada] = useState(false);
+  useEffect(() => {
+    const idNumero = id ? parseInt(id, 10) : NaN;
+    if (!userData || isMyProfile || Number.isNaN(idNumero)) {
+      setBloqueada(false);
+      return;
+    }
+    bloqueios
+      .listar()
+      .then((res) => setBloqueada(res.data.some((p) => p.idUsuario === idNumero)))
+      .catch(() => setBloqueada(false));
+  }, [userData, id, isMyProfile]);
+
   const carregar = useCallback(async () => {
     if (!userData || !id) return;
 
@@ -771,14 +788,28 @@ export default function Profile() {
         )}
         {botoesEdicao}
         {!isMyProfile && (
-          <DenunciarDialog idDenunciado={perfil.id} nomeDenunciado={perfil.nome} tipoAlvo="PERFIL">
-            <Button type="button" variant="outline">
-              <Flag aria-hidden="true" />
-              Denunciar
-            </Button>
-          </DenunciarDialog>
+          <div className="flex flex-wrap items-center gap-2">
+            <BloquearButton
+              idUsuario={perfil.id}
+              nome={perfil.nome}
+              bloqueada={bloqueada}
+              aoMudar={setBloqueada}
+            />
+            <DenunciarDialog idDenunciado={perfil.id} nomeDenunciado={perfil.nome} tipoAlvo="PERFIL">
+              <Button type="button" variant="outline">
+                <Flag aria-hidden="true" />
+                Denunciar
+              </Button>
+            </DenunciarDialog>
+          </div>
         )}
       </div>
+
+      {!isMyProfile && bloqueada && (
+        <p role="status" className="rounded-2xl border-2 border-primary bg-secondary px-4 py-3 font-semibold">
+          Você bloqueou esta pessoa. Ela não aparece para você e a conversa fica parada até você desbloquear.
+        </p>
+      )}
 
       <div className="grid items-start gap-6 md:grid-cols-[22rem_1fr]">
         <div className="md:sticky md:top-24">
@@ -806,6 +837,8 @@ export default function Profile() {
           )}
 
           {isEditing && isMyProfile && <div className="flex justify-end">{botoesEdicao}</div>}
+
+          {isMyProfile && !isEditing && <PessoasBloqueadas />}
 
           {isMyProfile && !isEditing && (
             <section aria-labelledby="titulo-excluir-conta" className="rounded-2xl border-2 border-destructive p-4">
