@@ -159,8 +159,7 @@ const Termos = () => {
         <Secao titulo="12. Propriedade intelectual">
           <P>
             A marca AtletaHub, o logotipo, o design e o software da plataforma pertencem a
-            Lu Castro Esportes em Cultura e Tecnologia Ltda. Estes Termos não transferem a
-            você nenhum desses direitos.
+            Luciane de Castro. Estes Termos não transferem a você nenhum desses direitos.
           </P>
         </Secao>
 
